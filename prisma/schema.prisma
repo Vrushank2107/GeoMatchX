@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  user_id    Int       @id @default(autoincrement())
+  name       String    @db.VarChar(100)
+  email      String    @unique @db.VarChar(120)
+  password   String?   @db.VarChar(255)
+  phone      String?   @db.VarChar(20)
+  user_type  UserType
+  created_at DateTime  @default(now())
+  
+  // Relations
+  locations  UserLocation[]
+  skills     UserSkill[]
+  jobs       SmeJob[]        @relation("SmeJobs")
+  matches    Match[]
+  
+  @@map("users")
+}
+
+enum UserType {
+  SME
+  WORKER
+}
+
+model UserLocation {
+  location_id Int       @id @default(autoincrement())
+  user_id     Int
+  address     String?   @db.Text
+  geom        Unsupported("geography(Point,4326)")?
+  created_at  DateTime  @default(now())
+  
+  user        User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  
+  @@map("user_locations")
+}
+
+model Skill {
+  skill_id   Int       @id @default(autoincrement())
+  skill_name String    @unique @db.VarChar(100)
+  
+  // Relations
+  user_skills UserSkill[]
+  job_skills  JobSkill[]
+  
+  @@map("skills")
+}
+
+model UserSkill {
+  user_id         Int
+  skill_id        Int
+  experience_years Int?
+  
+  user            User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  skill           Skill   @relation(fields: [skill_id], references: [skill_id], onDelete: Cascade)
+  
+  @@id([user_id, skill_id])
+  @@map("user_skills")
+}
+
+model SmeJob {
+  job_id         Int       @id @default(autoincrement())
+  sme_id         Int
+  job_title      String?   @db.VarChar(150)
+  job_description String?  @db.Text
+  salary         Decimal?  @db.Decimal
+  status         String    @default("OPEN") @db.VarChar(20)
+  created_at     DateTime  @default(now())
+  
+  // Relations
+  sme            User      @relation("SmeJobs", fields: [sme_id], references: [user_id], onDelete: Cascade)
+  skills         JobSkill[]
+  matches        Match[]
+  
+  @@map("sme_jobs")
+}
+
+model JobSkill {
+  job_id   Int
+  skill_id Int
+  
+  job      SmeJob  @relation(fields: [job_id], references: [job_id], onDelete: Cascade)
+  skill    Skill   @relation(fields: [skill_id], references: [skill_id], onDelete: Cascade)
+  
+  @@id([job_id, skill_id])
+  @@map("job_skills")
+}
+
+model Match {
+  match_id    Int       @id @default(autoincrement())
+  job_id      Int?
+  worker_id   Int?
+  distance_km Float?
+  score       Float?
+  created_at  DateTime  @default(now())
+  
+  job         SmeJob?   @relation(fields: [job_id], references: [job_id], onDelete: Cascade)
+  worker      User?     @relation(fields: [worker_id], references: [user_id], onDelete: Cascade)
+  
+  @@map("matches")
+}
