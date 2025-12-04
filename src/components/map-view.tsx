@@ -21,19 +21,39 @@ type MapViewProps = {
 };
 
 export function MapView({ workers, mapUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL }: MapViewProps) {
-  const center = useMemo(() => {
-    if (!workers.length) return { lat: 0, lng: 0 };
-    const avgLat = workers.reduce((sum, worker) => sum + worker.location.lat, 0) / workers.length;
-    const avgLng = workers.reduce((sum, worker) => sum + worker.location.lng, 0) / workers.length;
-    return { lat: avgLat, lng: avgLng };
+  // Filter workers with valid location data
+  const workersWithLocation = useMemo(() => {
+    return workers.filter(
+      (worker) =>
+        worker.location &&
+        worker.location.lat != null &&
+        worker.location.lng != null &&
+        !isNaN(worker.location.lat) &&
+        !isNaN(worker.location.lng)
+    );
   }, [workers]);
+
+  const center = useMemo(() => {
+    if (!workersWithLocation.length) return { lat: 20.5937, lng: 78.9629 }; // Default to India center
+    const avgLat =
+      workersWithLocation.reduce((sum, worker) => sum + (worker.location.lat || 0), 0) /
+      workersWithLocation.length;
+    const avgLng =
+      workersWithLocation.reduce((sum, worker) => sum + (worker.location.lng || 0), 0) /
+      workersWithLocation.length;
+    return { lat: avgLat, lng: avgLng };
+  }, [workersWithLocation]);
 
   return (
     <div className="h-[500px] w-full overflow-hidden rounded-3xl border border-zinc-200 shadow-xl dark:border-zinc-800">
       <MapContainer center={[center.lat, center.lng]} zoom={4} scrollWheelZoom className="h-full w-full">
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors' url={mapUrl ?? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"} />
-        {workers.map((worker) => (
-          <Marker key={worker.id} position={[worker.location.lat, worker.location.lng]} icon={icon}>
+        {workersWithLocation.map((worker) => (
+          <Marker
+            key={worker.id}
+            position={[worker.location.lat!, worker.location.lng!]}
+            icon={icon}
+          >
             <Popup>
               <div className="space-y-1 text-sm">
                 <p className="font-semibold">{worker.name}</p>

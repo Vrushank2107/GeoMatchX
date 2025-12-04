@@ -16,11 +16,25 @@ export function useAuth() {
 
   useEffect(() => {
     checkAuth();
+    
+    // Also check auth when window gains focus (user comes back to tab)
+    const handleFocus = () => {
+      checkAuth();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   async function checkAuth() {
     try {
-      const response = await fetch("/api/auth/me");
+      setIsLoading(true);
+      const response = await fetch("/api/auth/me", {
+        cache: 'no-store',
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);

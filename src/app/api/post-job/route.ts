@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma, queryDb } from "@/lib/db";
+import { database } from "@/lib/db";
 import { requireSME, getAuthenticatedUser } from "@/lib/api-auth";
 
 export async function POST(request: Request) {
@@ -37,9 +37,15 @@ export async function POST(request: Request) {
     }
 
     // Get the authenticated SME user
-    const sme = await prisma.user.findUnique({
-      where: { user_id: currentUser.userId, user_type: 'SME' }
-        });
+    const sme = database.prepare(`
+      SELECT * FROM users 
+      WHERE user_id = ? AND user_type = 'SME'
+    `).get(currentUser.userId) as {
+      user_id: number;
+      name: string;
+      email: string;
+      user_type: string;
+    } | undefined;
 
     if (!sme) {
       return NextResponse.json(
@@ -54,78 +60,71 @@ export async function POST(request: Request) {
       : null;
 
     // Create the job
-    const job = await prisma.smeJob.create({
-      data: {
-        sme_id: sme.user_id,
-        job_title: title,
-        job_description: description,
-        salary: salary,
-        status: 'OPEN'
-      }
-    });
+    const jobResult = database.prepare(`
+      INSERT INTO sme_jobs (sme_id, job_title, job_description, salary, status)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(sme.user_id, title, description, salary, 'OPEN');
+
+    const jobId = jobResult.lastInsertRowid as number;
 
     // Add skills to the job
     if (requiredSkills && Array.isArray(requiredSkills) && requiredSkills.length > 0) {
       for (const skillName of requiredSkills) {
         // Find or create skill
-        let skill = await prisma.skill.findFirst({
-          where: {
-            skill_name: {
-              equals: skillName,
-              mode: 'insensitive'
-            }
-          }
-        });
+        let skill = database.prepare(`
+          SELECT skill_id FROM skills WHERE LOWER(skill_name) = LOWER(?)
+        `).get(skillName) as { skill_id: number } | undefined;
 
         if (!skill) {
-          skill = await prisma.skill.create({
-            data: {
-              skill_name: skillName
-            }
-          });
+          const skillResult = database.prepare(`
+            INSERT INTO skills (skill_name) VALUES (?)
+          `).run(skillName);
+          skill = { skill_id: skillResult.lastInsertRowid as number };
         }
 
         // Link skill to job
-        await prisma.jobSkill.create({
-          data: {
-            job_id: job.job_id,
-            skill_id: skill.skill_id
-          }
-        });
+        database.prepare(`
+          INSERT INTO job_skills (job_id, skill_id)
+          VALUES (?, ?)
+        `).run(jobId, skill.skill_id);
       }
     }
 
     // If location is provided, update or create SME location
     if (location && location.lat && location.lng) {
       // Check if SME already has a location
-      const existingLocation = await prisma.userLocation.findFirst({
-        where: { user_id: sme.user_id }
-      });
+      const existingLocation = database.prepare(`
+        SELECT location_id FROM user_locations WHERE user_id = ? LIMIT 1
+      `).get(sme.user_id) as { location_id: number } | undefined;
 
       if (existingLocation) {
         // Update existing location
-        await queryDb(
-          `UPDATE user_locations 
-           SET geom = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-               address = $3
-           WHERE location_id = $4`,
-          location.lng,
-          location.lat,
-          location.city || location.address || '',
-          existingLocation.location_id
-        );
+        database.prepare(`
+          UPDATE user_locations 
+          SET latitude = ?, longitude = ?, address = ?
+          WHERE location_id = ?
+        `).run(location.lat, location.lng, location.city || location.address || '', existingLocation.location_id);
       } else {
         // Create new location
-        await queryDb(
-          `INSERT INTO user_locations (user_id, address, geom)
-           VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography)`,
-          sme.user_id,
-          location.city || location.address || '',
-          location.lng,
-          location.lat
-        );
+        database.prepare(`
+          INSERT INTO user_locations (user_id, address, latitude, longitude)
+          VALUES (?, ?, ?, ?)
+        `).run(sme.user_id, location.city || location.address || '', location.lat, location.lng);
       }
     }
+
+    // Get the created job
+    const job = database.prepare(`
+      SELECT * FROM sme_jobs WHERE job_id = ?
+    `).get(jobId) as {
+      job_id: number;
+      sme_id: number;
+      job_title: string | null;
+      job_description: string | null;
+      salary: number | null;
+      status: string;
+      created_at: string;
+    };
 
     // Return formatted job response
     const formattedJob = {
@@ -150,4 +149,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

@@ -25,6 +25,8 @@ export type Worker = {
   rating: number;
   skills: SkillTag[];
   bio: string;
+  email?: string;
+  phone?: string | null;
 };
 
 export type Job = {

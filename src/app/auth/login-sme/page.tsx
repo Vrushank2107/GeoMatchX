@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -10,8 +10,6 @@ import Link from "next/link";
 
 export default function LoginSmePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/post-job";
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -44,7 +42,9 @@ export default function LoginSmePage() {
         description: `Welcome back, ${data.user.name}!`,
       });
 
-      router.push(redirect);
+      // Refresh auth state and redirect to home page
+      // Use window.location to ensure full page reload and auth state refresh
+      window.location.href = "/";
     } catch (error) {
       toast.error("Login failed", {
         description: error instanceof Error ? error.message : "Unknown error",

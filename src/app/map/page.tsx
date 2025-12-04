@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import MapClient from "./map-client";
 import { LoadingState } from "@/components/loading-state";
+import { AuthGuard } from "@/components/auth-guard";
 import type { Worker } from "@/lib/mockData";
 
 export default function MapPage() {
@@ -29,24 +30,26 @@ export default function MapPage() {
     fetchWorkers();
   }, []);
 
-  if (isLoading) {
-    return <LoadingState />;
-  }
-
-  if (error) {
     return (
+    <AuthGuard requireAuth>
       <div className="space-y-6">
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Coverage intelligence</p>
           <h1 className="text-3xl font-semibold">Live worker density and proximity</h1>
+          <p className="text-sm text-zinc-500">
+            Visualize worker locations and coverage across different regions.
+          </p>
         </div>
+        {isLoading ? (
+          <LoadingState />
+        ) : error ? (
         <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-200">
           {error}
         </div>
+        ) : (
+          <MapClient workers={workers} />
+        )}
       </div>
+    </AuthGuard>
     );
   }
-
-  return <MapClient workers={workers} />;
-}
-

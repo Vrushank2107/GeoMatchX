@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { database } from '@/lib/db';
 import { hashPassword, createSession } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    // Check database connection
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json(
-        { error: 'Database not configured. Please set DATABASE_URL in .env file.' },
-        { status: 500 }
-      );
-    }
-
     // Parse request body with error handling
     let body;
     try {
@@ -51,9 +43,9 @@ export async function POST(request: Request) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = database.prepare(`
+      SELECT user_id FROM users WHERE email = ?
+    `).get(email) as { user_id: number } | undefined;
 
     if (existingUser) {
       return NextResponse.json(
@@ -66,34 +58,38 @@ export async function POST(request: Request) {
     const hashedPassword = await hashPassword(password);
 
     // Create SME user
-    const user = await prisma.user.create({
-      data: {
-        name: companyName,
-        email,
-        password: hashedPassword,
-        phone: phone || null,
-        user_type: 'SME',
-      },
-    });
+    const result = database.prepare(`
+      INSERT INTO users (name, email, password, phone, user_type)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(companyName, email, hashedPassword, phone || null, 'SME');
+
+    const userId = result.lastInsertRowid as number;
 
     // Add location if provided
     if (hqCity) {
-      await prisma.userLocation.create({
-        data: {
-          user_id: user.user_id,
-          address: hqCity,
-          geom: null, // Would need geocoding to set this
-        },
-      });
+      database.prepare(`
+        INSERT INTO user_locations (user_id, address, latitude, longitude)
+        VALUES (?, ?, ?, ?)
+      `).run(userId, hqCity, null, null);
     }
 
     // Create session
     try {
-      await createSession(user.user_id, user.user_type);
+      await createSession(userId, 'SME');
     } catch (sessionError) {
       console.error('Session creation error:', sessionError);
       // Continue even if session creation fails - user is still created
     }
+
+    // Get the created user
+    const user = database.prepare(`
+      SELECT user_id, name, email, user_type FROM users WHERE user_id = ?
+    `).get(userId) as {
+      user_id: number;
+      name: string;
+      email: string;
+      user_type: 'SME' | 'WORKER';
+    };
 
     const response = NextResponse.json({
       success: true,
@@ -112,16 +108,15 @@ export async function POST(request: Request) {
     
     // Always return JSON, never let Next.js return HTML error page
     try {
-      // Provide more specific error messages
       if (error instanceof Error) {
-        // Check for Prisma errors
-        if (error.message.includes('Unique constraint') || error.message.includes('unique')) {
+        // Check for unique constraint errors
+        if (error.message.includes('UNIQUE constraint') || error.message.includes('unique')) {
           return NextResponse.json(
             { error: 'Email already registered. Please use a different email or try logging in.' },
             { status: 400 }
           );
         }
-        if (error.message.includes('connect') || error.message.includes('database') || error.message.includes('Prisma')) {
+        if (error.message.includes('connect') || error.message.includes('database')) {
           return NextResponse.json(
             { error: 'Database connection error. Please check your database configuration.' },
             { status: 500 }
@@ -138,7 +133,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     } catch (responseError) {
-      // Fallback if even error response fails
       console.error('Failed to create error response:', responseError);
       return new NextResponse(
         JSON.stringify({ error: 'An unexpected error occurred. Please try again later.' }),
@@ -150,4 +144,3 @@ export async function POST(request: Request) {
     }
   }
 }
-

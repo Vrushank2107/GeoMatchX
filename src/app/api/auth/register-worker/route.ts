@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
-import { prisma, queryDb } from '@/lib/db';
+import { database } from '@/lib/db';
 import { hashPassword, createSession } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    // Check database connection
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json(
-        { error: 'Database not configured. Please set DATABASE_URL in .env file.' },
-        { status: 500 }
-      );
-    }
-
     // Parse request body with error handling
     let body;
     try {
@@ -51,9 +43,9 @@ export async function POST(request: Request) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = database.prepare(`
+      SELECT user_id FROM users WHERE email = ?
+    `).get(email) as { user_id: number } | undefined;
 
     if (existingUser) {
       return NextResponse.json(
@@ -66,15 +58,12 @@ export async function POST(request: Request) {
     const hashedPassword = await hashPassword(password);
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        phone: phone || null,
-        user_type: 'WORKER',
-      },
-    });
+    const result = database.prepare(`
+      INSERT INTO users (name, email, password, phone, user_type)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(name, email, hashedPassword, phone || null, 'WORKER');
+
+    const userId = result.lastInsertRowid as number;
 
     // Add skills if provided
     if (skillFocus) {
@@ -82,55 +71,51 @@ export async function POST(request: Request) {
       for (const skillName of skills) {
         if (!skillName) continue;
         
-        // Find or create skill
-        let skill = await prisma.skill.findFirst({
-          where: {
-            skill_name: {
-              equals: skillName,
-              mode: 'insensitive',
-            },
-          },
-        });
+        // Find or create skill (case-insensitive search)
+        let skill = database.prepare(`
+          SELECT skill_id FROM skills WHERE LOWER(skill_name) = LOWER(?)
+        `).get(skillName) as { skill_id: number } | undefined;
 
         if (!skill) {
-          skill = await prisma.skill.create({
-            data: {
-              skill_name: skillName,
-            },
-          });
+          const skillResult = database.prepare(`
+            INSERT INTO skills (skill_name) VALUES (?)
+          `).run(skillName);
+          skill = { skill_id: skillResult.lastInsertRowid as number };
         }
 
-        // Link skill to user (with default experience if not provided)
-        await prisma.userSkill.create({
-          data: {
-            user_id: user.user_id,
-            skill_id: skill.skill_id,
-            experience_years: null, // Can be updated later
-          },
-        });
+        // Link skill to user
+        database.prepare(`
+          INSERT INTO user_skills (user_id, skill_id, experience_years)
+          VALUES (?, ?, ?)
+        `).run(userId, skill.skill_id, null);
       }
     }
 
     // Add location if provided
     if (city) {
-      // For now, we'll just store the address without coordinates
-      // In a real app, you'd geocode the city to get lat/lng
-      await prisma.userLocation.create({
-        data: {
-          user_id: user.user_id,
-          address: city,
-          geom: null, // Would need geocoding to set this
-        },
-      });
+      database.prepare(`
+        INSERT INTO user_locations (user_id, address, latitude, longitude)
+        VALUES (?, ?, ?, ?)
+      `).run(userId, city, null, null);
     }
 
     // Create session
     try {
-      await createSession(user.user_id, user.user_type);
+      await createSession(userId, 'WORKER');
     } catch (sessionError) {
       console.error('Session creation error:', sessionError);
       // Continue even if session creation fails - user is still created
     }
+
+    // Get the created user
+    const user = database.prepare(`
+      SELECT user_id, name, email, user_type FROM users WHERE user_id = ?
+    `).get(userId) as {
+      user_id: number;
+      name: string;
+      email: string;
+      user_type: 'SME' | 'WORKER';
+    };
 
     const response = NextResponse.json({
       success: true,
@@ -149,16 +134,15 @@ export async function POST(request: Request) {
     
     // Always return JSON, never let Next.js return HTML error page
     try {
-      // Provide more specific error messages
       if (error instanceof Error) {
-        // Check for Prisma errors
-        if (error.message.includes('Unique constraint') || error.message.includes('unique')) {
+        // Check for unique constraint errors
+        if (error.message.includes('UNIQUE constraint') || error.message.includes('unique')) {
           return NextResponse.json(
             { error: 'Email already registered. Please use a different email or try logging in.' },
             { status: 400 }
           );
         }
-        if (error.message.includes('connect') || error.message.includes('database') || error.message.includes('Prisma')) {
+        if (error.message.includes('connect') || error.message.includes('database')) {
           return NextResponse.json(
             { error: 'Database connection error. Please check your database configuration.' },
             { status: 500 }
@@ -175,7 +159,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     } catch (responseError) {
-      // Fallback if even error response fails
       console.error('Failed to create error response:', responseError);
       return new NextResponse(
         JSON.stringify({ error: 'An unexpected error occurred. Please try again later.' }),
@@ -187,4 +170,3 @@ export async function POST(request: Request) {
     }
   }
 }
-

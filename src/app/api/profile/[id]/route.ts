@@ -1,45 +1,53 @@
 import { NextResponse } from "next/server";
-import { prisma, getLocationCoordinates } from "@/lib/db";
+import { database, getLocationCoordinates } from "@/lib/db";
 
-type Params = {
-  params: {
-    id: string;
-  };
-};
-
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   try {
+    // Handle Next.js 16 params which might be a Promise
+    const resolvedParams = params instanceof Promise ? await params : params;
+    
+    if (!resolvedParams?.id) {
+      return NextResponse.json(
+        { error: "Worker ID is required" },
+        { status: 400 }
+      );
+    }
+    
     // Extract user_id from id (format: wkr-1 or just 1)
-    const userId = params.id.startsWith('wkr-') 
-      ? parseInt(params.id.replace('wkr-', ''))
-      : parseInt(params.id);
+    const userId = resolvedParams.id.startsWith('wkr-') 
+      ? parseInt(resolvedParams.id.replace('wkr-', ''))
+      : parseInt(resolvedParams.id);
 
-    if (isNaN(userId)) {
+    if (isNaN(userId) || userId <= 0) {
       return NextResponse.json(
         { error: "Invalid worker ID" },
         { status: 400 }
       );
     }
 
-    const worker = await prisma.user.findUnique({
-      where: {
-        user_id: userId,
-        user_type: 'WORKER'
-      },
-      include: {
-        locations: {
-          take: 1,
-          orderBy: {
-            created_at: 'desc'
-          }
-        },
-        skills: {
-          include: {
-            skill: true
-          }
-        }
-      }
-    });
+    // Check database connection
+    if (!database) {
+      console.error("Database not initialized");
+      return NextResponse.json(
+        { error: "Database connection error" },
+        { status: 500 }
+      );
+    }
+
+    const worker = database.prepare(`
+      SELECT * FROM users 
+      WHERE user_id = ? AND user_type = 'WORKER'
+    `).get(userId) as {
+      user_id: number;
+      name: string;
+      email: string;
+      phone: string | null;
+      user_type: string;
+      created_at: string;
+    } | undefined;
 
     if (!worker) {
       return NextResponse.json(
@@ -48,30 +56,61 @@ export async function GET(_request: Request, { params }: Params) {
       );
     }
 
-    const location = worker.locations[0];
+    // Get location
+    const locations = database.prepare(`
+      SELECT * FROM user_locations
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).all(userId) as Array<{
+      location_id: number;
+      user_id: number;
+      address: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      created_at: string;
+    }>;
+
+    // Get skills
+    const userSkills = database.prepare(`
+      SELECT us.*, s.skill_name
+      FROM user_skills us
+      JOIN skills s ON us.skill_id = s.skill_id
+      WHERE us.user_id = ?
+    `).all(userId) as Array<{
+      user_id: number;
+      skill_id: number;
+      experience_years: number | null;
+      skill_name: string;
+    }>;
+
+    const location = locations[0];
     let lat = 0;
     let lng = 0;
     
-    if (location?.geom) {
-      const coords = await getLocationCoordinates(location.location_id);
+    if (location?.latitude && location?.longitude) {
+      lat = location.latitude;
+      lng = location.longitude;
+    } else if (location?.location_id) {
+      const coords = getLocationCoordinates(location.location_id);
       if (coords) {
         lng = coords.longitude;
         lat = coords.latitude;
       }
     }
 
-    const avgExperience = worker.skills.length > 0
+    const avgExperience = userSkills.length > 0
       ? Math.round(
-          worker.skills.reduce((sum, us) => sum + (us.experience_years || 0), 0) /
-          worker.skills.length
+          userSkills.reduce((sum, us) => sum + (us.experience_years || 0), 0) /
+          userSkills.length
         )
       : 0;
 
     const formattedWorker = {
       id: `wkr-${worker.user_id}`,
       name: worker.name,
-      headline: worker.skills.length > 0 
-        ? `${worker.skills[0].skill.skill_name} specialist`
+      headline: userSkills.length > 0 
+        ? `${userSkills[0].skill_name} specialist`
         : "Available worker",
       experience: avgExperience,
       availability: "Immediate" as const,
@@ -83,8 +122,8 @@ export async function GET(_request: Request, { params }: Params) {
         lng
       },
       rating: 4.5 + Math.random() * 0.5,
-      skills: worker.skills.map(us => us.skill.skill_name) as any[],
-      bio: `Experienced ${worker.skills.map(us => us.skill.skill_name).join(", ")} professional.`,
+      skills: userSkills.map(us => us.skill_name) as any[],
+      bio: `Experienced ${userSkills.map(us => us.skill_name).join(", ")} professional.`,
       email: worker.email,
       phone: worker.phone
     };
@@ -92,10 +131,13 @@ export async function GET(_request: Request, { params }: Params) {
     return NextResponse.json(formattedWorker);
   } catch (error) {
     console.error("Error fetching worker profile:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to fetch worker profile" },
+      { 
+        error: "Failed to fetch worker profile",
+        details: errorMessage 
+      },
       { status: 500 }
     );
   }
 }
-

@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-client";
 import type { Worker, Job, Recommendation } from "@/lib/mockData";
 
 export default function Home() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, isWorker, isSME } = useAuth();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -21,15 +21,6 @@ export default function Home() {
         if (workersResponse.ok) {
           const workersData = await workersResponse.json();
           setWorkers(workersData.results?.slice(0, 6) || []); // Show first 6 workers
-        }
-
-        // Only fetch recommendations if authenticated
-        if (isAuthenticated) {
-          const recResponse = await fetch("/api/recommend");
-          if (recResponse.ok) {
-            const recData = await recResponse.json();
-            setRecommendations(recData.recommendations || []);
-          }
         }
       } catch (error) {
         console.error("Error fetching home data:", error);
@@ -50,6 +41,9 @@ export default function Home() {
       recommendations={recommendations}
       isLoading={isLoading || authLoading}
       isAuthenticated={isAuthenticated}
+      user={user}
+      isWorker={isWorker}
+      isSME={isSME}
     />
   );
 }

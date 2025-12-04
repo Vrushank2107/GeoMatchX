@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { database } from '@/lib/db';
 import { verifyPassword, createSession } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    // Check database connection
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json(
-        { error: 'Database not configured. Please set DATABASE_URL in .env file.' },
-        { status: 500 }
-      );
-    }
-
     // Parse request body with error handling
     let body;
     try {
@@ -34,9 +26,17 @@ export async function POST(request: Request) {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = database.prepare(`
+      SELECT * FROM users WHERE email = ?
+    `).get(email) as {
+      user_id: number;
+      name: string;
+      email: string;
+      password: string | null;
+      phone: string | null;
+      user_type: 'SME' | 'WORKER';
+      created_at: string;
+    } | undefined;
 
     if (!user) {
       return NextResponse.json(
@@ -45,9 +45,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user has a password (for existing users without passwords, we'll allow login)
+    // Check if user has a password
     if (!user.password) {
-      // For existing users without passwords, create a temporary password or deny access
       return NextResponse.json(
         { error: 'Please set a password. Use registration to create an account.' },
         { status: 401 }
@@ -80,10 +79,8 @@ export async function POST(request: Request) {
     
     // Always return JSON, never let Next.js return HTML error page
     try {
-      // Provide more specific error messages
       if (error instanceof Error) {
-        // Check for database connection errors
-        if (error.message.includes('connect') || error.message.includes('database') || error.message.includes('Prisma')) {
+        if (error.message.includes('connect') || error.message.includes('database')) {
           return NextResponse.json(
             { error: 'Database connection error. Please check your database configuration or contact support.' },
             { status: 500 }
@@ -100,7 +97,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     } catch (responseError) {
-      // Fallback if even error response fails
       console.error('Failed to create error response:', responseError);
       return new NextResponse(
         JSON.stringify({ error: 'An unexpected error occurred. Please try again later.' }),
@@ -112,4 +108,3 @@ export async function POST(request: Request) {
     }
   }
 }
-
