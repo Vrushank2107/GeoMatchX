@@ -29,7 +29,7 @@ export default function NotificationsPage() {
 
   async function fetchNotifications() {
     try {
-      const response = await fetch("/api/worker/notifications");
+      const response = await fetch("/api/notifications");
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications || []);
@@ -44,7 +44,7 @@ export default function NotificationsPage() {
 
   async function markAsRead(notificationId: number) {
     try {
-      await fetch("/api/worker/notifications", {
+      await fetch("/api/notifications", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notificationId, read: true }),
@@ -57,7 +57,7 @@ export default function NotificationsPage() {
 
   async function markAllAsRead() {
     try {
-      await fetch("/api/worker/notifications", {
+      await fetch("/api/notifications", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ read: true }),
@@ -82,7 +82,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <AuthGuard requireAuth requireWorker>
+    <AuthGuard requireAuth>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -143,7 +143,7 @@ export default function NotificationsPage() {
                     </div>
                     {notification.link && (
                       <Link href={notification.link}>
-                        <Button variant="link" size="sm" className="mt-2">
+                        <Button variant="outline" size="sm" className="mt-2">
                           View
                         </Button>
                       </Link>

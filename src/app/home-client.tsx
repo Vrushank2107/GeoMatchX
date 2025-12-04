@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowRight, Globe2, LayoutDashboard, Sparkles, Users2 } from "lucide-react";
 
-import type { Job, Recommendation, Worker } from "@/lib/mockData";
+import type { HomeJob, HomeRecommendation, HomeWorker } from "./page";
 import type { User } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,9 +19,9 @@ const SearchBar = dynamic(() => import("@/components/search-bar").then((mod) => 
 const MapView = dynamic(() => import("@/components/map-view").then((mod) => mod.MapView), { ssr: false });
 
 type HomeClientProps = {
-  workers: Worker[];
-  jobs: Job[];
-  recommendations: Recommendation[];
+  workers: HomeWorker[];
+  jobs: HomeJob[];
+  recommendations: HomeRecommendation[];
   isLoading?: boolean;
   isAuthenticated?: boolean;
   user?: User | null;

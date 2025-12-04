@@ -154,7 +154,7 @@ export default function SMEApplicationsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="outline"
                         onClick={() => handleStatusUpdate(app.application_id, "REJECTED")}
                         disabled={updatingId === app.application_id}
                       >

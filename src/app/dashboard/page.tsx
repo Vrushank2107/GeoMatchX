@@ -18,26 +18,43 @@ export default function DashboardPage() {
     accepted: 0,
     recruitments: 0,
   });
+  const [profileCompletion, setProfileCompletion] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchStats() {
+    async function fetchData() {
       try {
-        const response = await fetch("/api/worker/stats");
-        if (response.ok) {
-          const data = await response.json();
+        const [statsRes, profileRes] = await Promise.all([
+          fetch("/api/worker/stats"),
+          fetch("/api/worker/profile"),
+        ]);
+
+        if (statsRes.ok) {
+          const data = await statsRes.json();
           setStats(data);
         }
+
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          const fields = [
+            !!profile.city,
+            Array.isArray(profile.skills) && profile.skills.length > 0,
+            !!profile.bio,
+          ];
+          const completedCount = fields.filter(Boolean).length;
+          const completion = Math.round((completedCount / fields.length) * 100);
+          setProfileCompletion(completion);
+        }
       } catch (error) {
-        console.error("Error fetching stats:", error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setIsLoading(false);
       }
     }
-    fetchStats();
-    
-    // Refresh stats every 5 seconds to reflect real-time updates
-    const interval = setInterval(fetchStats, 5000);
+    fetchData();
+
+    // Refresh stats periodically to reflect real-time updates
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -60,6 +77,18 @@ export default function DashboardPage() {
           <LoadingState />
         ) : (
           <>
+            {profileCompletion !== null && profileCompletion < 70 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                <p className="font-semibold mb-1">Boost your visibility</p>
+                <p className="mb-3">
+                  Your profile is about {profileCompletion}% complete. Add your city, skills, and a short bio so companies can find you in search.
+                </p>
+                <Button size="sm" asChild>
+                  <Link href="/profile/edit">Complete profile</Link>
+                </Button>
+              </div>
+            )}
+
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card className="group hover:border-indigo-300 dark:hover:border-indigo-700">

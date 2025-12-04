@@ -67,6 +67,26 @@ export async function POST(request: Request) {
       });
     }
 
+    // Prevent recruitment if worker already has an active application with this company
+    const activeApplication = database.prepare(`
+      SELECT ja.application_id, ja.status
+      FROM job_applications ja
+      JOIN sme_jobs j ON ja.job_id = j.job_id
+      WHERE ja.worker_id = ? AND j.sme_id = ?
+        AND ja.status IN ('PENDING', 'ACCEPTED')
+      LIMIT 1
+    `).get(userId, currentUser.userId) as {
+      application_id: number;
+      status: string;
+    } | undefined;
+
+    if (activeApplication) {
+      return NextResponse.json(
+        { error: "This worker already has an active job application with your company. Please manage it from your Applications page instead of sending a recruitment request." },
+        { status: 400 }
+      );
+    }
+
     // Get company name
     const company = database.prepare(`
       SELECT name FROM users WHERE user_id = ?

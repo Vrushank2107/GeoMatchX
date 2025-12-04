@@ -59,9 +59,16 @@ export async function POST(request: Request) {
 
     // Create user
     const result = database.prepare(`
-      INSERT INTO users (name, email, password, phone, user_type)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(name, email, hashedPassword, phone || null, 'WORKER');
+      INSERT INTO users (name, email, password, phone, user_type, bio)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      name,
+      email,
+      hashedPassword,
+      phone || null,
+      'WORKER',
+      experienceSummary || null,
+    );
 
     const userId = result.lastInsertRowid as number;
 

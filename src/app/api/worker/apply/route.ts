@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if already applied
+    // Check if already applied for this job
     const existingApplication = database.prepare(`
       SELECT * FROM job_applications 
       WHERE worker_id = ? AND job_id = ?
@@ -50,6 +50,25 @@ export async function POST(request: Request) {
     if (existingApplication) {
       return NextResponse.json(
         { error: "You have already applied for this job" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent applying if there is an active recruitment request from this company
+    const activeRecruitment = database.prepare(`
+      SELECT request_id, status
+      FROM recruitment_requests
+      WHERE sme_id = ? AND worker_id = ?
+        AND status IN ('PENDING', 'ACCEPTED')
+      LIMIT 1
+    `).get(job.sme_id, currentUser.userId) as {
+      request_id: number;
+      status: string;
+    } | undefined;
+
+    if (activeRecruitment) {
+      return NextResponse.json(
+        { error: "You already have a recruitment offer from this company. Please respond to that offer instead of applying for this job." },
         { status: 400 }
       );
     }
@@ -77,7 +96,7 @@ export async function POST(request: Request) {
         `).run(
           companyUser.user_id,
           `${worker.name} applied for your job posting`,
-          `/api/sme/applications?job_id=${job_id}`
+          `/sme/applications?job_id=${job_id}`
         );
       }
     }

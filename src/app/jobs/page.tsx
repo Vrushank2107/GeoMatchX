@@ -5,11 +5,26 @@ import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/lib/auth-client";
 import { JobCard } from "@/components/job-card";
 import { LoadingState } from "@/components/loading-state";
-import type { Job } from "@/lib/mockData";
+
+export type JobsPageJob = {
+  id: string;
+  title: string;
+  company: string;
+  budget: string;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  requiredSkills: string[];
+  description: string;
+  job_id?: number;
+};
 
 export default function JobsPage() {
   const { isWorker } = useAuth();
-  const [jobs, setJobs] = useState<(Job & { job_id?: number })[]>([]);
+  const [jobs, setJobs] = useState<JobsPageJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

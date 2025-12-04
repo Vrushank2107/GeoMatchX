@@ -4,10 +4,27 @@ import { useEffect, useState } from "react";
 import MapClient from "./map-client";
 import { LoadingState } from "@/components/loading-state";
 import { AuthGuard } from "@/components/auth-guard";
-import type { Worker } from "@/lib/mockData";
+
+export type MapWorker = {
+  id: string;
+  name: string;
+  headline: string;
+  experience: number;
+  availability: string;
+  hourlyRate: number;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  rating: number;
+  skills: string[];
+  bio: string;
+};
 
 export default function MapPage() {
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [workers, setWorkers] = useState<MapWorker[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

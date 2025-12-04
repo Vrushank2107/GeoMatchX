@@ -56,7 +56,8 @@ export default function RegisterWorkerPage() {
 
       // Small delay to show toast before redirect
       setTimeout(() => {
-        router.push("/workers");
+        // Send newly registered workers to complete their profile
+        router.push("/profile/edit");
       }, 500);
     } catch (error) {
       console.error("Registration error:", error);

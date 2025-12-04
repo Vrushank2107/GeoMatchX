@@ -11,21 +11,57 @@ import { WorkerCard } from "@/components/worker-card";
 import { JobCard } from "@/components/job-card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-client";
-import type { Worker, Job } from "@/lib/mockData";
+
+export type SearchWorker = {
+  id: string;
+  name: string;
+  headline: string;
+  experience: number;
+  availability: string;
+  hourlyRate: number;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  rating: number;
+  skills: string[];
+  bio: string;
+};
+
+export type SearchJob = {
+  id: string;
+  title: string;
+  company: string;
+  budget: string;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  requiredSkills: string[];
+  description: string;
+  job_id?: number;
+};
 
 type SearchResponse = {
-  results: Worker[];
+  results: SearchWorker[];
   total: number;
 };
 
 export default function SearchClient() {
   const { isWorker, isSME } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<Worker[]>([]);
-  const [jobs, setJobs] = useState<(Job & { job_id?: number })[]>([]);
+  const [results, setResults] = useState<SearchWorker[]>([]);
+  const [jobs, setJobs] = useState<SearchJob[]>([]);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showJobs, setShowJobs] = useState(isWorker);
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
+  const [lastFilters, setLastFilters] = useState<SearchFilters | null>(null);
 
   // When auth state changes, update toggle to default to jobs view for workers
   useEffect(() => {
@@ -46,14 +82,14 @@ export default function SearchClient() {
     }
   }, [isWorker, showJobs]);
 
-  async function handleSearch(filters: SearchFilters) {
+  async function fetchResults(filters: SearchFilters, pageToLoad: number) {
     setIsLoading(true);
     setError(null);
     try {
       const response = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(filters),
+        body: JSON.stringify({ ...filters, page: pageToLoad, pageSize }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -69,12 +105,20 @@ export default function SearchClient() {
     }
   }
 
+  async function handleSearch(filters: SearchFilters) {
+    setLastFilters(filters);
+    setPage(1);
+    await fetchResults(filters, 1);
+  }
+
   function handleApplySuccess() {
     fetch("/api/jobs")
       .then((res) => res.json())
       .then((data) => setJobs(data.jobs || []))
       .catch(console.error);
   }
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="space-y-8">
@@ -158,6 +202,44 @@ export default function SearchClient() {
               />
             ))}
           </div>
+
+          {lastFilters && totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2 text-xs text-zinc-500">
+              <span>
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isLoading}
+                  onClick={() => {
+                    if (lastFilters && page > 1) {
+                      const newPage = page - 1;
+                      setPage(newPage);
+                      fetchResults(lastFilters, newPage);
+                    }
+                  }}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || isLoading}
+                  onClick={() => {
+                    if (lastFilters && page < totalPages) {
+                      const newPage = page + 1;
+                      setPage(newPage);
+                      fetchResults(lastFilters, newPage);
+                    }
+                  }}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

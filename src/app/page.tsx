@@ -3,13 +3,52 @@
 import { useEffect, useState } from "react";
 import HomeClient from "./home-client";
 import { useAuth } from "@/lib/auth-client";
-import type { Worker, Job, Recommendation } from "@/lib/mockData";
+
+export type HomeWorker = {
+  id: string;
+  name: string;
+  headline: string;
+  experience: number;
+  availability: string;
+  hourlyRate: number;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  rating: number;
+  skills: string[];
+  bio: string;
+};
+
+export type HomeJob = {
+  id: string;
+  title: string;
+  company: string;
+  budget: string;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  requiredSkills: string[];
+  description: string;
+};
+
+export type HomeRecommendation = {
+  id: string;
+  worker: HomeWorker;
+  matchScore: number;
+  driver: string;
+};
 
 export default function Home() {
   const { user, isAuthenticated, isLoading: authLoading, isWorker, isSME } = useAuth();
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [workers, setWorkers] = useState<HomeWorker[]>([]);
+  const [jobs, setJobs] = useState<HomeJob[]>([]);
+  const [recommendations, setRecommendations] = useState<HomeRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

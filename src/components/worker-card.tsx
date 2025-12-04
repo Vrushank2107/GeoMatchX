@@ -4,14 +4,31 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BadgeCheck, LocateFixed, Star, UserPlus, CheckCircle } from "lucide-react";
 
-import type { Worker } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-client";
 
+export type WorkerCardWorker = {
+  id: string;
+  name: string;
+  headline: string;
+  experience: number;
+  availability: string;
+  hourlyRate: number;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  rating: number;
+  skills: string[];
+  bio: string;
+};
+
 type WorkerCardProps = {
-  worker: Worker;
+  worker: WorkerCardWorker;
   actionLabel?: string;
   actionHref?: string;
   onAction?: (worker: Worker) => void;

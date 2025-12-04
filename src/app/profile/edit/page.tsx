@@ -331,7 +331,7 @@ export default function EditProfilePage() {
                 <CardDescription>Manage your account security</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="destructive" onClick={handleLogout} className="w-full">
+                <Button variant="outline" onClick={handleLogout} className="w-full">
                   <LogOut className="mr-2 h-4 w-4" />
                   Log Out
                 </Button>

@@ -6,6 +6,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const skill = searchParams.get("skill");
     const location = searchParams.get("location");
+    const keyword = searchParams.get("keyword") || undefined;
+    const page = Number(searchParams.get("page") || "1") || 1;
+    const pageSize = Number(searchParams.get("pageSize") || "12") || 12;
 
     // Build base query
     let query = `
@@ -79,17 +82,33 @@ export async function GET(request: Request) {
       };
     });
 
-    // Filter by location if provided
+    // Apply keyword filter (name or any skill match)
     let filteredWorkers = workersWithDetails;
-    if (location) {
-      filteredWorkers = workersWithDetails.filter(worker => {
-        const workerLocation = worker.locations[0];
-        return workerLocation?.address?.toLowerCase().includes(location.toLowerCase());
+    if (keyword) {
+      const kw = keyword.toLowerCase();
+      filteredWorkers = filteredWorkers.filter((worker) => {
+        const matchesName = worker.name.toLowerCase().includes(kw);
+        const matchesSkill = worker.skills.some((s) => s.skill_name.toLowerCase().includes(kw));
+        return matchesName || matchesSkill;
       });
     }
 
+    // Filter by location if provided
+    if (location) {
+      const loc = location.toLowerCase();
+      filteredWorkers = filteredWorkers.filter((worker) => {
+        const workerLocation = worker.locations[0];
+        return workerLocation?.address?.toLowerCase().includes(loc);
+      });
+    }
+
+    const total = filteredWorkers.length;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const pagedWorkers = filteredWorkers.slice(start, end);
+
     // Transform to expected format
-    const formattedWorkers = await Promise.all(filteredWorkers.map(async (worker) => {
+    const formattedWorkers = await Promise.all(pagedWorkers.map(async (worker) => {
       const workerLocation = worker.locations[0];
       let lat = 0;
       let lng = 0;
@@ -135,7 +154,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ 
       results: formattedWorkers, 
-      total: formattedWorkers.length 
+      total,
     });
   } catch (error) {
     console.error("Error searching workers:", error);
@@ -149,8 +168,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const skill = body.skill;
-    const location = body.location;
+    const skill = body.skill as string | undefined;
+    const location = body.location as string | undefined;
+    const keyword = (body.keyword as string | undefined) || undefined;
+    const page = (body.page as number | undefined) && body.page > 0 ? body.page : 1;
+    const pageSize = (body.pageSize as number | undefined) && body.pageSize > 0 ? body.pageSize : 12;
 
     // Build base query
     let query = `
@@ -224,14 +246,30 @@ export async function POST(request: Request) {
     });
 
     let filteredWorkers = workersWithDetails;
-    if (location) {
-      filteredWorkers = workersWithDetails.filter(worker => {
-        const workerLocation = worker.locations[0];
-        return workerLocation?.address?.toLowerCase().includes(location.toLowerCase());
+
+    if (keyword) {
+      const kw = keyword.toLowerCase();
+      filteredWorkers = filteredWorkers.filter((worker) => {
+        const matchesName = worker.name.toLowerCase().includes(kw);
+        const matchesSkill = worker.skills.some((s) => s.skill_name.toLowerCase().includes(kw));
+        return matchesName || matchesSkill;
       });
     }
 
-    const formattedWorkers = await Promise.all(filteredWorkers.map(async (worker) => {
+    if (location) {
+      const loc = location.toLowerCase();
+      filteredWorkers = filteredWorkers.filter((worker) => {
+        const workerLocation = worker.locations[0];
+        return workerLocation?.address?.toLowerCase().includes(loc);
+      });
+    }
+
+    const total = filteredWorkers.length;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const pagedWorkers = filteredWorkers.slice(start, end);
+
+    const formattedWorkers = await Promise.all(pagedWorkers.map(async (worker) => {
       const workerLocation = worker.locations[0];
       let lat = 0;
       let lng = 0;
@@ -277,7 +315,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       results: formattedWorkers, 
-      total: formattedWorkers.length 
+      total,
     });
   } catch (error) {
     console.error("Error searching workers:", error);

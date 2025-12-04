@@ -5,7 +5,18 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import type { Worker } from "@/lib/mockData";
+export type MapViewWorker = {
+  id: string;
+  name: string;
+  headline: string;
+  rating: number;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+};
 
 const icon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -16,7 +27,7 @@ const icon = new L.Icon({
 });
 
 type MapViewProps = {
-  workers: Worker[];
+  workers: MapViewWorker[];
   mapUrl?: string;
 };
 

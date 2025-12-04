@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { database } from "@/lib/db";
-import { requireWorker, getAuthenticatedUser } from "@/lib/api-auth";
+import { requireAuth, getAuthenticatedUser } from "@/lib/api-auth";
 
 export async function GET() {
   try {
-    const authError = await requireWorker();
+    const authError = await requireAuth();
     if (authError) {
       return authError;
     }
@@ -14,7 +14,6 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get notifications
     const notifications = database
       .prepare(
         `SELECT * FROM notifications 
@@ -33,7 +32,6 @@ export async function GET() {
         created_at: string;
       }>;
 
-    // Get unread count
     const unreadCount = database
       .prepare(
         `SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read = 0`
@@ -56,14 +54,14 @@ export async function GET() {
     console.error("Error fetching notifications:", error);
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const authError = await requireWorker();
+    const authError = await requireAuth();
     if (authError) {
       return authError;
     }
@@ -74,20 +72,18 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { notificationId, read } = body;
+    const { notificationId, read } = body as { notificationId?: number; read?: boolean };
 
     if (notificationId) {
-      // Mark single notification as read
       database
         .prepare(
           `UPDATE notifications SET read = ? WHERE notification_id = ? AND user_id = ?`
         )
         .run(read ? 1 : 0, notificationId, currentUser.userId);
-    } else {
-      // Mark all as read
+    } else if (typeof read === "boolean") {
       database
-        .prepare(`UPDATE notifications SET read = 1 WHERE user_id = ?`)
-        .run(currentUser.userId);
+        .prepare(`UPDATE notifications SET read = ? WHERE user_id = ?`)
+        .run(read ? 1 : 0, currentUser.userId);
     }
 
     return NextResponse.json({ success: true });
@@ -95,8 +91,7 @@ export async function PUT(request: Request) {
     console.error("Error updating notifications:", error);
     return NextResponse.json(
       { error: "Failed to update notifications" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

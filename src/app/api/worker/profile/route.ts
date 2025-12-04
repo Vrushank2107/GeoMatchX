@@ -40,20 +40,24 @@ export async function GET() {
       )
       .all(currentUser.userId) as Array<{ skill_name: string; experience_years: number | null }>;
 
+    const avgExperience = skills.length > 0
+      ? Math.round(
+          skills.reduce((sum, s) => sum + (s.experience_years || 0), 0) / skills.length
+        )
+      : 0;
+
     return NextResponse.json({
       name: user.name,
       email: user.email,
       phone: user.phone,
       city: location?.address || "",
       skills: skills.map((s) => s.skill_name),
-      experience: skills.length > 0
-        ? Math.round(
-            skills.reduce((sum, s) => sum + (s.experience_years || 0), 0) / skills.length
-          )
-        : 0,
-      bio: skills.length > 0
-        ? `Experienced ${skills.map((s) => s.skill_name).join(", ")} professional.`
-        : "Available worker ready for opportunities.",
+      experience: avgExperience,
+      bio: user.bio || (
+        skills.length > 0
+          ? `Experienced ${skills.map((s) => s.skill_name).join(", ")} professional.`
+          : "Available worker ready for opportunities."
+      ),
       rating: 4.5 + Math.random() * 0.5, // Mock rating for now
     });
   } catch (error) {
@@ -82,8 +86,8 @@ export async function PUT(request: Request) {
 
     // Update user
     database
-      .prepare(`UPDATE users SET name = ?, phone = ? WHERE user_id = ?`)
-      .run(name, phone || null, currentUser.userId);
+      .prepare(`UPDATE users SET name = ?, phone = ?, bio = ? WHERE user_id = ?`)
+      .run(name, phone || null, bio || null, currentUser.userId);
 
     // Update location
     if (city) {

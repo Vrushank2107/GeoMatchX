@@ -39,9 +39,19 @@ function initializeSchema() {
       password TEXT,
       phone TEXT,
       user_type TEXT NOT NULL CHECK(user_type IN ('SME', 'WORKER')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      bio TEXT
     )
   `);
+
+  // Backfill bio column for existing databases (ignore error if it already exists)
+  try {
+    database.exec(`ALTER TABLE users ADD COLUMN bio TEXT`);
+  } catch (error) {
+    if (error instanceof Error && !error.message.includes('duplicate column name')) {
+      console.error('[db] Failed to add bio column to users table:', error);
+    }
+  }
 
   // Create user_locations table
   database.exec(`
@@ -315,6 +325,7 @@ export interface User {
   phone: string | null;
   user_type: 'SME' | 'WORKER';
   created_at: string;
+  bio: string | null;
 }
 
 export interface UserLocation {

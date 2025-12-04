@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     }
 
     // Check if recruitment request exists
-    const request = database.prepare(`
+    const recruitmentRequest = database.prepare(`
       SELECT * FROM recruitment_requests 
       WHERE sme_id = ? AND worker_id = ?
     `).get(currentUser.userId, userId) as {
@@ -46,10 +46,25 @@ export async function GET(request: Request) {
       created_at: string;
     } | undefined;
 
+    // Check if worker already has an active application with this company
+    const activeApplication = database.prepare(`
+      SELECT ja.application_id, ja.status
+      FROM job_applications ja
+      JOIN sme_jobs j ON ja.job_id = j.job_id
+      WHERE ja.worker_id = ? AND j.sme_id = ?
+        AND ja.status IN ('PENDING', 'ACCEPTED')
+      LIMIT 1
+    `).get(userId, currentUser.userId) as {
+      application_id: number;
+      status: string;
+    } | undefined;
+
     return NextResponse.json({
-      hasRequest: !!request,
-      status: request?.status || null,
-      request_id: request?.request_id || null,
+      hasRequest: !!recruitmentRequest,
+      status: recruitmentRequest?.status || null,
+      request_id: recruitmentRequest?.request_id || null,
+      hasApplication: !!activeApplication,
+      canRecruit: !recruitmentRequest && !activeApplication,
     });
   } catch (error) {
     console.error("Error checking recruitment status:", error);

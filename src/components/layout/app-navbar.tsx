@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkle, User, Building2, LogOut, Settings, Edit, Eye, ChevronDown } from "lucide-react";
+import { Sparkle, User, Building2, LogOut, Settings, Edit, Eye, ChevronDown, Bell } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const navItems = [
   { href: "/workers", label: "Workers", requiresAuth: true },
   { href: "/post-job", label: "Post a Job", requiresAuth: true, smeOnly: true },
   { href: "/sme/dashboard", label: "Dashboard", requiresAuth: true, smeOnly: true },
+  { href: "/sme/applications", label: "Applications", requiresAuth: true, smeOnly: true },
   { href: "/applications", label: "Applications", requiresAuth: true, workerOnly: true },
   { href: "/dashboard", label: "Dashboard", requiresAuth: true, workerOnly: true },
 ];
@@ -26,6 +27,7 @@ export function AppNavbar() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, isWorker, isSME, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   // Filter nav items based on auth state
   const visibleNavItems = navItems.filter((item) => {
@@ -43,6 +45,37 @@ export function AppNavbar() {
     
     return true;
   });
+
+  useEffect(() => {
+    let interval: number | undefined;
+
+    async function fetchNotifications() {
+      if (!isAuthenticated) {
+        setUnreadNotifications(0);
+        return;
+      }
+      try {
+        const res = await fetch("/api/notifications", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadNotifications(data.unreadCount || 0);
+        }
+      } catch {
+        // fail silently; notifications are non-critical
+      }
+    }
+
+    if (isAuthenticated && !isLoading) {
+      fetchNotifications();
+      interval = window.setInterval(fetchNotifications, 15000);
+    }
+
+    return () => {
+      if (interval) {
+        window.clearInterval(interval);
+      }
+    };
+  }, [isAuthenticated, isLoading]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -75,6 +108,16 @@ export function AppNavbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          {isAuthenticated && !isLoading && (
+            <Link href="/notifications" className="relative inline-flex items-center justify-center rounded-full p-2 text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-zinc-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-950/40 transition-colors">
+              <Bell className="h-5 w-5" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              )}
+            </Link>
+          )}
           {isLoading ? (
             <div className="h-9 w-20 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800" />
           ) : isAuthenticated && user ? (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Briefcase, Users, CheckCircle } from "lucide-react";
+import { Briefcase, Users, CheckCircle, UserPlus } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/lib/auth-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,21 +15,53 @@ export default function SMEDashboardPage() {
     totalJobs: 0,
     openJobs: 0,
   });
+  const [jobs, setJobs] = useState<
+    Array<{
+      id: string;
+      title: string;
+      budget: string;
+      status: string;
+      created_at: string;
+      job_id: number;
+      applications_total: number;
+      applications_pending: number;
+      applications_accepted: number;
+    }>
+  >([]);
+  const [recruitments, setRecruitments] = useState<
+    Array<{
+      request_id: number;
+      worker_id: number;
+      worker_name: string;
+      worker_email: string;
+      status: string;
+      created_at: string;
+    }>
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Fetch jobs count for this company
-        const jobsResponse = await fetch("/api/sme/jobs");
+        const [jobsResponse, recruitmentsResponse] = await Promise.all([
+          fetch("/api/sme/jobs"),
+          fetch("/api/sme/recruitments"),
+        ]);
+
         if (jobsResponse.ok) {
           const jobsData = await jobsResponse.json();
-          const allJobs = jobsData.jobs || [];
-          setStats(prev => ({
+          const allJobs = (jobsData.jobs || []) as typeof jobs;
+          setJobs(allJobs);
+          setStats((prev) => ({
             ...prev,
             totalJobs: allJobs.length,
-            openJobs: allJobs.filter((job: any) => job.status === 'OPEN').length,
+            openJobs: allJobs.filter((job) => job.status === 'OPEN').length,
           }));
+        }
+
+        if (recruitmentsResponse.ok) {
+          const recData = await recruitmentsResponse.json();
+          setRecruitments(recData.recruitments || []);
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -123,6 +155,105 @@ export default function SMEDashboardPage() {
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Active Jobs overview */}
+            <div className="space-y-3 mt-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Active Jobs</h2>
+                <p className="text-xs text-zinc-500">
+                  {jobs.length === 0
+                    ? 'No jobs posted yet. Start by creating your first brief.'
+                    : `You have ${jobs.length} job${jobs.length === 1 ? '' : 's'} in your workspace.`}
+                </p>
+              </div>
+
+              {jobs.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center text-sm text-zinc-500">
+                    <p>Post a job to start receiving applications and recruitment responses.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {jobs.slice(0, 5).map((job) => (
+                    <Card key={job.id} className="group hover:border-indigo-300 dark:hover:border-indigo-700">
+                      <CardContent className="flex flex-col gap-2 py-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="font-medium text-zinc-900 dark:text-zinc-100">{job.title}</p>
+                          <p className="text-xs text-zinc-500">
+                            {job.status === 'OPEN' ? 'Open' : job.status} · {job.budget}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+                          <span>
+                            {job.applications_total} application{job.applications_total === 1 ? '' : 's'}
+                          </span>
+                          <span>
+                            {job.applications_pending} pending
+                          </span>
+                          <span>
+                            {job.applications_accepted} accepted
+                          </span>
+                          <Button asChild size="sm" variant="outline" className="ml-auto">
+                            <Link href={`/sme/applications?job_id=${job.job_id}`}>
+                              View candidates
+                            </Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recruitment requests overview */}
+            <div className="space-y-3 mt-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-indigo-500" />
+                  Recruitment Requests
+                </h2>
+                <p className="text-xs text-zinc-500">
+                  {recruitments.length === 0
+                    ? 'No recruitment requests sent yet.'
+                    : `${recruitments.length} request${recruitments.length === 1 ? '' : 's'} sent to workers.`}
+                </p>
+              </div>
+
+              {recruitments.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-6 text-sm text-zinc-500">
+                    <p>Use the worker directory or search to send recruitment offers to operators.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {recruitments.slice(0, 5).map((req) => (
+                    <Card key={req.request_id}>
+                      <CardContent className="flex flex-col gap-1 py-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            {req.worker_name}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {req.worker_email}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-start gap-1 text-xs text-zinc-500 md:items-end">
+                          <span className="uppercase tracking-wide">
+                            {req.status}
+                          </span>
+                          <span>
+                            {new Date(req.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}

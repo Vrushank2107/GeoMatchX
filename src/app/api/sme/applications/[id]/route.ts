@@ -4,8 +4,9 @@ import { requireSME, getAuthenticatedUser } from "@/lib/api-auth";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const resolvedParams = context.params instanceof Promise ? await context.params : context.params;
   try {
     const authError = await requireSME();
     if (authError) {
@@ -17,7 +18,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const applicationId = parseInt(params.id);
+    const applicationId = parseInt(resolvedParams.id);
     const body = await request.json();
     const { status } = body;
 

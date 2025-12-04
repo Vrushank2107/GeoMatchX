@@ -8,12 +8,29 @@ import { WorkerCard } from "@/components/worker-card";
 import { LoadingState } from "@/components/loading-state";
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/lib/auth-client";
-import type { Worker } from "@/lib/mockData";
 import { Building2, User } from "lucide-react";
+
+export type DirectoryWorker = {
+  id: string;
+  name: string;
+  headline: string;
+  experience: number;
+  availability: string;
+  hourlyRate: number;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  rating: number;
+  skills: string[];
+  bio: string;
+};
 
 export default function WorkersPage() {
   const { isAuthenticated, isSME, user, isWorker } = useAuth();
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [workers, setWorkers] = useState<DirectoryWorker[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +49,7 @@ export default function WorkersPage() {
         if (isWorker && user) {
           const currentUserId = user.id;
           // Worker IDs are in format "wkr-{user_id}", so we need to extract the numeric part
-          filteredWorkers = filteredWorkers.filter((worker: Worker) => {
+          filteredWorkers = filteredWorkers.filter((worker: DirectoryWorker) => {
             const workerIdMatch = worker.id.match(/wkr-(\d+)/);
             const workerUserId = workerIdMatch ? parseInt(workerIdMatch[1]) : null;
             return workerUserId !== currentUserId;

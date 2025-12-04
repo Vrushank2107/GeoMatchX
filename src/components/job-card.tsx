@@ -4,12 +4,27 @@ import { useState } from "react";
 import { Building2, MapPin, Sparkles, CheckCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth-client";
 
-import type { Job } from "@/lib/mockData";
+export type JobCardJob = {
+  id: string;
+  title: string;
+  company: string;
+  budget: string;
+  location: {
+    city: string;
+    country: string;
+    lat: number;
+    lng: number;
+  };
+  requiredSkills: string[];
+  description: string;
+  job_id?: number;
+};
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type JobCardProps = {
-  job: Job & { job_id?: number };
+  job: JobCardJob;
   showApplyButton?: boolean;
   onApplySuccess?: () => void;
 };
