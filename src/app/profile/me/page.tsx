@@ -26,7 +26,7 @@ export default function MyProfilePage() {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const response = await fetch("/api/worker/profile");
+        const response = await fetch("/api/candidate/profile");
         if (response.ok) {
           const data = await response.json();
           setProfile(data);
@@ -43,18 +43,25 @@ export default function MyProfilePage() {
   return (
     <AuthGuard requireAuth requireWorker>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">My Profile</p>
             <h1 className="text-3xl font-semibold">How Employers See You</h1>
             <p className="text-sm text-zinc-500">This is how your profile appears to companies.</p>
           </div>
-          <Button asChild>
-            <Link href="/profile/edit">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Link>
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button asChild>
+              <Link href="/profile/edit">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Profile
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/profile/change-password">
+                Change Password
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -69,7 +76,7 @@ export default function MyProfilePage() {
                   <p className="text-sm text-zinc-500">
                     {profile.skills.length > 0
                       ? `${profile.skills[0]} specialist`
-                      : "Available worker"}
+                      : "Available candidate"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 rounded-full bg-indigo-50 px-4 py-2 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-200">

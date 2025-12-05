@@ -64,7 +64,7 @@ export async function PATCH(
       WHERE application_id = ?
     `).run(status, applicationId);
 
-    // Create notification for the worker
+    // Create notification for the candidate
     const job = database.prepare(`
       SELECT job_title FROM sme_jobs WHERE job_id = ?
     `).get(application.job_id) as { job_title: string | null } | undefined;

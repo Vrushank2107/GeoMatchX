@@ -28,9 +28,9 @@ export async function GET() {
     const recommendations = await Promise.all(matches.map(async (match, index) => {
       if (!match.worker_id) return null;
 
-      // Get worker
-      const worker = database.prepare(`
-        SELECT * FROM users WHERE user_id = ? AND user_type = 'WORKER'
+      // Get candidate
+      const candidate = database.prepare(`
+        SELECT * FROM users WHERE user_id = ? AND user_type = 'CANDIDATE'
       `).get(match.worker_id) as {
         user_id: number;
         name: string;
@@ -40,7 +40,7 @@ export async function GET() {
         created_at: string;
       } | undefined;
 
-      if (!worker) return null;
+      if (!candidate) return null;
 
       // Get location
       const locations = database.prepare(`
@@ -48,7 +48,7 @@ export async function GET() {
         WHERE user_id = ?
         ORDER BY created_at DESC
         LIMIT 1
-      `).all(worker.user_id) as Array<{
+      `).all(candidate.user_id) as Array<{
         location_id: number;
         user_id: number;
         address: string | null;
@@ -63,7 +63,7 @@ export async function GET() {
         FROM user_skills us
         JOIN skills s ON us.skill_id = s.skill_id
         WHERE us.user_id = ?
-      `).all(worker.user_id) as Array<{
+      `).all(candidate.user_id) as Array<{
         user_id: number;
         skill_id: number;
         experience_years: number | null;
@@ -93,11 +93,11 @@ export async function GET() {
         : 0;
 
       const workerFormatted = {
-        id: `wkr-${worker.user_id}`,
-        name: worker.name,
+        id: `wkr-${candidate.user_id}`,
+        name: candidate.name,
         headline: userSkills.length > 0 
           ? `${userSkills[0].skill_name} specialist`
-          : "Available worker",
+          : "Available candidate",
         experience: avgExperience,
         availability: "Immediate" as const,
         hourlyRate: 30 + Math.floor(Math.random() * 30),
@@ -122,7 +122,7 @@ export async function GET() {
 
       return {
         id: `rec-${match.match_id}`,
-        worker: workerFormatted,
+        candidate: workerFormatted,
         matchScore: match.score || 85 - index * 5,
         driver
       };

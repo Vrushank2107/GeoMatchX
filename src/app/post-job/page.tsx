@@ -11,7 +11,7 @@ export default function PostJobPage() {
           <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Job brief</p>
           <h1 className="text-3xl font-semibold">Post a new job opportunity</h1>
           <p className="text-sm text-zinc-500">
-            Create a job posting to find skilled workers for your project.
+            Create a job posting to find skilled candidates for your project.
           </p>
         </div>
         <PostJobForm />

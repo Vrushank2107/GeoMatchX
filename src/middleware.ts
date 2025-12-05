@@ -5,9 +5,9 @@ import type { NextRequest } from 'next/server';
 const publicRoutes = [
   '/', // Home page - allow unauthenticated users to see website info
   '/auth/login',
-  '/auth/login-worker',
+  '/auth/login-candidate',
   '/auth/login-sme',
-  '/auth/register-worker',
+  '/auth/register-candidate',
   '/auth/register-sme',
 ];
 
@@ -18,8 +18,8 @@ const smeOnlyRoutes = [
   '/post-job',
 ];
 
-// Routes that are Worker-only (if any)
-const workerOnlyRoutes: string[] = [];
+// Routes that are Candidate-only (if any)
+const candidateOnlyRoutes: string[] = [];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -46,13 +46,13 @@ export function middleware(request: NextRequest) {
     // Check SME-only routes
     if (smeOnlyRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
       if (userType !== 'SME') {
-        return NextResponse.redirect(new URL('/workers', request.url));
+        return NextResponse.redirect(new URL('/candidates', request.url));
       }
     }
 
-    // Check Worker-only routes
-    if (workerOnlyRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
-      if (userType !== 'WORKER') {
+    // Check Candidate-only routes
+    if (candidateOnlyRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+      if (userType !== 'CANDIDATE') {
         return NextResponse.redirect(new URL('/post-job', request.url));
       }
     }

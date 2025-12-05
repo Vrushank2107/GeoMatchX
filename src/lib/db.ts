@@ -38,7 +38,7 @@ function initializeSchema() {
       email TEXT UNIQUE NOT NULL,
       password TEXT,
       phone TEXT,
-      user_type TEXT NOT NULL CHECK(user_type IN ('SME', 'WORKER')),
+      user_type TEXT NOT NULL CHECK(user_type IN ('SME', 'CANDIDATE')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       bio TEXT
     )
@@ -323,7 +323,7 @@ export interface User {
   email: string;
   password: string | null;
   phone: string | null;
-  user_type: 'SME' | 'WORKER';
+  user_type: 'SME' | 'CANDIDATE';
   created_at: string;
   bio: string | null;
 }
@@ -366,7 +366,7 @@ export interface JobSkill {
 export interface Match {
   match_id: number;
   job_id: number | null;
-  worker_id: number | null;
+  candidate_id: number | null;
   distance_km: number | null;
   score: number | null;
   created_at: string;
@@ -375,7 +375,7 @@ export interface Match {
 export interface JobApplication {
   application_id: number;
   job_id: number;
-  worker_id: number;
+  candidate_id: number;
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
   cover_letter: string | null;
   created_at: string;

@@ -26,7 +26,7 @@ export async function GET() {
       name: string;
       email: string;
       phone: string | null;
-      user_type: 'SME' | 'WORKER';
+      user_type: 'SME' | 'CANDIDATE';
       created_at: string;
     } | undefined;
 

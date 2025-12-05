@@ -127,7 +127,7 @@ export default function SMEDashboardPage() {
                   <CardTitle className="group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     Post a Job
                   </CardTitle>
-                  <CardDescription>Create a new job posting to find skilled workers</CardDescription>
+                  <CardDescription>Create a new job posting to find skilled candidates</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button asChild className="w-full">
@@ -142,15 +142,15 @@ export default function SMEDashboardPage() {
               <Card className="group hover:border-indigo-300 dark:hover:border-indigo-700">
                 <CardHeader>
                   <CardTitle className="group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Find Workers
+                    Find Candidates
                   </CardTitle>
-                  <CardDescription>Search for skilled workers by skills and location</CardDescription>
+                  <CardDescription>Search for skilled candidates by skills and location</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button asChild variant="outline" className="w-full">
                     <Link href="/search">
                       <Users className="mr-2 h-4 w-4" />
-                      Search Workers
+                      Search Candidates
                     </Link>
                   </Button>
                 </CardContent>
@@ -218,14 +218,14 @@ export default function SMEDashboardPage() {
                 <p className="text-xs text-zinc-500">
                   {recruitments.length === 0
                     ? 'No recruitment requests sent yet.'
-                    : `${recruitments.length} request${recruitments.length === 1 ? '' : 's'} sent to workers.`}
+                    : `${recruitments.length} request${recruitments.length === 1 ? '' : 's'} sent to candidates.`}
                 </p>
               </div>
 
               {recruitments.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-6 text-sm text-zinc-500">
-                    <p>Use the worker directory or search to send recruitment offers to operators.</p>
+                    <p>Use the candidate directory or search to send recruitment offers to operators.</p>
                   </CardContent>
                 </Card>
               ) : (

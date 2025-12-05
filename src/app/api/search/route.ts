@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { database, getLocationCoordinates } from "@/lib/db";
+import { database, getLocationCoordinates, findLocationsWithinRadius } from "@/lib/db";
+import { requireAuth, getAuthenticatedUser } from "@/lib/api-auth";
 
 export async function GET(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
         u.user_type,
         u.created_at
       FROM users u
-      WHERE u.user_type = 'WORKER'
+      WHERE u.user_type = 'CANDIDATE'
     `;
 
     const params: unknown[] = [];
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
       params.push(`%${skill}%`);
     }
 
-    const workers = database.prepare(query).all(...params) as Array<{
+    const candidates = database.prepare(query).all(...params) as Array<{
       user_id: number;
       name: string;
       email: string;
@@ -47,14 +48,14 @@ export async function GET(request: Request) {
       created_at: string;
     }>;
 
-    // Get locations and skills for each worker
-    const workersWithDetails = workers.map(worker => {
+    // Get locations and skills for each candidate
+    const workersWithDetails = candidates.map(candidate => {
       const locations = database.prepare(`
         SELECT * FROM user_locations
         WHERE user_id = ?
         ORDER BY created_at DESC
         LIMIT 1
-      `).all(worker.user_id) as Array<{
+      `).all(candidate.user_id) as Array<{
         location_id: number;
         user_id: number;
         address: string | null;
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
         FROM user_skills us
         JOIN skills s ON us.skill_id = s.skill_id
         WHERE us.user_id = ?
-      `).all(worker.user_id) as Array<{
+      `).all(candidate.user_id) as Array<{
         user_id: number;
         skill_id: number;
         experience_years: number | null;
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
       }>;
 
       return {
-        ...worker,
+        ...candidate,
         locations,
         skills: userSkills
       };
@@ -86,9 +87,9 @@ export async function GET(request: Request) {
     let filteredWorkers = workersWithDetails;
     if (keyword) {
       const kw = keyword.toLowerCase();
-      filteredWorkers = filteredWorkers.filter((worker) => {
-        const matchesName = worker.name.toLowerCase().includes(kw);
-        const matchesSkill = worker.skills.some((s) => s.skill_name.toLowerCase().includes(kw));
+      filteredWorkers = filteredWorkers.filter((candidate) => {
+        const matchesName = candidate.name.toLowerCase().includes(kw);
+        const matchesSkill = candidate.skills.some((s) => s.skill_name.toLowerCase().includes(kw));
         return matchesName || matchesSkill;
       });
     }
@@ -96,8 +97,8 @@ export async function GET(request: Request) {
     // Filter by location if provided
     if (location) {
       const loc = location.toLowerCase();
-      filteredWorkers = filteredWorkers.filter((worker) => {
-        const workerLocation = worker.locations[0];
+      filteredWorkers = filteredWorkers.filter((candidate) => {
+        const workerLocation = candidate.locations[0];
         return workerLocation?.address?.toLowerCase().includes(loc);
       });
     }
@@ -108,8 +109,8 @@ export async function GET(request: Request) {
     const pagedWorkers = filteredWorkers.slice(start, end);
 
     // Transform to expected format
-    const formattedWorkers = await Promise.all(pagedWorkers.map(async (worker) => {
-      const workerLocation = worker.locations[0];
+    const formattedWorkers = await Promise.all(pagedWorkers.map(async (candidate) => {
+      const workerLocation = candidate.locations[0];
       let lat = 0;
       let lng = 0;
       
@@ -124,19 +125,19 @@ export async function GET(request: Request) {
         }
       }
 
-      const avgExperience = worker.skills.length > 0
+      const avgExperience = candidate.skills.length > 0
         ? Math.round(
-            worker.skills.reduce((sum, us) => sum + (us.experience_years || 0), 0) /
-            worker.skills.length
+            candidate.skills.reduce((sum, us) => sum + (us.experience_years || 0), 0) /
+            candidate.skills.length
           )
         : 0;
 
       return {
-        id: `wkr-${worker.user_id}`,
-        name: worker.name,
-        headline: worker.skills.length > 0 
-          ? `${worker.skills[0].skill_name} specialist`
-          : "Available worker",
+        id: `wkr-${candidate.user_id}`,
+        name: candidate.name,
+        headline: candidate.skills.length > 0 
+          ? `${candidate.skills[0].skill_name} specialist`
+          : "Available candidate",
         experience: avgExperience,
         availability: "Immediate" as const,
         hourlyRate: 30 + Math.floor(Math.random() * 30),
@@ -147,8 +148,8 @@ export async function GET(request: Request) {
           lng
         },
         rating: 4.5 + Math.random() * 0.5,
-        skills: worker.skills.map(us => us.skill_name) as any[],
-        bio: `Experienced ${worker.skills.map(us => us.skill_name).join(", ")} professional.`
+        skills: candidate.skills.map(us => us.skill_name) as any[],
+        bio: `Experienced ${candidate.skills.map(us => us.skill_name).join(", ")} professional.`
       };
     }));
 
@@ -157,9 +158,9 @@ export async function GET(request: Request) {
       total,
     });
   } catch (error) {
-    console.error("Error searching workers:", error);
+    console.error("Error searching candidates:", error);
     return NextResponse.json(
-      { error: "Failed to search workers" },
+      { error: "Failed to search candidates" },
       { status: 500 }
     );
   }
@@ -173,6 +174,7 @@ export async function POST(request: Request) {
     const keyword = (body.keyword as string | undefined) || undefined;
     const page = (body.page as number | undefined) && body.page > 0 ? body.page : 1;
     const pageSize = (body.pageSize as number | undefined) && body.pageSize > 0 ? body.pageSize : 12;
+    const radius = typeof body.radius === "number" && body.radius > 0 ? body.radius : undefined;
 
     // Build base query
     let query = `
@@ -184,7 +186,7 @@ export async function POST(request: Request) {
         u.user_type,
         u.created_at
       FROM users u
-      WHERE u.user_type = 'WORKER'
+      WHERE u.user_type = 'CANDIDATE'
     `;
 
     const params: unknown[] = [];
@@ -201,7 +203,7 @@ export async function POST(request: Request) {
       params.push(`%${skill}%`);
     }
 
-    const workers = database.prepare(query).all(...params) as Array<{
+    const candidates = database.prepare(query).all(...params) as Array<{
       user_id: number;
       name: string;
       email: string;
@@ -210,14 +212,14 @@ export async function POST(request: Request) {
       created_at: string;
     }>;
 
-    // Get locations and skills for each worker
-    const workersWithDetails = workers.map(worker => {
+    // Get locations and skills for each candidate
+    const workersWithDetails = candidates.map(candidate => {
       const locations = database.prepare(`
         SELECT * FROM user_locations
         WHERE user_id = ?
         ORDER BY created_at DESC
         LIMIT 1
-      `).all(worker.user_id) as Array<{
+      `).all(candidate.user_id) as Array<{
         location_id: number;
         user_id: number;
         address: string | null;
@@ -231,7 +233,7 @@ export async function POST(request: Request) {
         FROM user_skills us
         JOIN skills s ON us.skill_id = s.skill_id
         WHERE us.user_id = ?
-      `).all(worker.user_id) as Array<{
+      `).all(candidate.user_id) as Array<{
         user_id: number;
         skill_id: number;
         experience_years: number | null;
@@ -239,7 +241,7 @@ export async function POST(request: Request) {
       }>;
 
       return {
-        ...worker,
+        ...candidate,
         locations,
         skills: userSkills
       };
@@ -249,17 +251,17 @@ export async function POST(request: Request) {
 
     if (keyword) {
       const kw = keyword.toLowerCase();
-      filteredWorkers = filteredWorkers.filter((worker) => {
-        const matchesName = worker.name.toLowerCase().includes(kw);
-        const matchesSkill = worker.skills.some((s) => s.skill_name.toLowerCase().includes(kw));
+      filteredWorkers = filteredWorkers.filter((candidate) => {
+        const matchesName = candidate.name.toLowerCase().includes(kw);
+        const matchesSkill = candidate.skills.some((s) => s.skill_name.toLowerCase().includes(kw));
         return matchesName || matchesSkill;
       });
     }
 
     if (location) {
       const loc = location.toLowerCase();
-      filteredWorkers = filteredWorkers.filter((worker) => {
-        const workerLocation = worker.locations[0];
+      filteredWorkers = filteredWorkers.filter((candidate) => {
+        const workerLocation = candidate.locations[0];
         return workerLocation?.address?.toLowerCase().includes(loc);
       });
     }
@@ -269,8 +271,8 @@ export async function POST(request: Request) {
     const end = start + pageSize;
     const pagedWorkers = filteredWorkers.slice(start, end);
 
-    const formattedWorkers = await Promise.all(pagedWorkers.map(async (worker) => {
-      const workerLocation = worker.locations[0];
+    const formattedWorkers = await Promise.all(pagedWorkers.map(async (candidate) => {
+      const workerLocation = candidate.locations[0];
       let lat = 0;
       let lng = 0;
       
@@ -285,19 +287,19 @@ export async function POST(request: Request) {
         }
       }
 
-      const avgExperience = worker.skills.length > 0
+      const avgExperience = candidate.skills.length > 0
         ? Math.round(
-            worker.skills.reduce((sum, us) => sum + (us.experience_years || 0), 0) /
-            worker.skills.length
+            candidate.skills.reduce((sum, us) => sum + (us.experience_years || 0), 0) /
+            candidate.skills.length
           )
         : 0;
 
       return {
-        id: `wkr-${worker.user_id}`,
-        name: worker.name,
-        headline: worker.skills.length > 0 
-          ? `${worker.skills[0].skill_name} specialist`
-          : "Available worker",
+        id: `wkr-${candidate.user_id}`,
+        name: candidate.name,
+        headline: candidate.skills.length > 0 
+          ? `${candidate.skills[0].skill_name} specialist`
+          : "Available candidate",
         experience: avgExperience,
         availability: "Immediate" as const,
         hourlyRate: 30 + Math.floor(Math.random() * 30),
@@ -308,8 +310,8 @@ export async function POST(request: Request) {
           lng
         },
         rating: 4.5 + Math.random() * 0.5,
-        skills: worker.skills.map(us => us.skill_name) as any[],
-        bio: `Experienced ${worker.skills.map(us => us.skill_name).join(", ")} professional.`
+        skills: candidate.skills.map(us => us.skill_name) as any[],
+        bio: `Experienced ${candidate.skills.map(us => us.skill_name).join(", ")} professional.`
       };
     }));
 
@@ -318,9 +320,9 @@ export async function POST(request: Request) {
       total,
     });
   } catch (error) {
-    console.error("Error searching workers:", error);
+    console.error("Error searching candidates:", error);
     return NextResponse.json(
-      { error: "Failed to search workers" },
+      { error: "Failed to search candidates" },
       { status: 500 }
     );
   }

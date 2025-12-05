@@ -89,7 +89,7 @@ export default function SMEApplicationsPage() {
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Job Applications</p>
           <h1 className="text-3xl font-semibold">Manage Applications</h1>
-          <p className="text-sm text-zinc-500">Review and respond to job applications from workers.</p>
+          <p className="text-sm text-zinc-500">Review and respond to job applications from candidates.</p>
         </div>
 
         {isLoading ? (
@@ -99,7 +99,7 @@ export default function SMEApplicationsPage() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Briefcase className="h-12 w-12 text-zinc-400 mb-4" />
               <p className="text-lg font-semibold mb-2">No applications yet</p>
-              <p className="text-sm text-zinc-500">Applications from workers will appear here.</p>
+              <p className="text-sm text-zinc-500">Applications from candidates will appear here.</p>
             </CardContent>
           </Card>
         ) : (

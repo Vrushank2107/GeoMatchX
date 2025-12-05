@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-client";
 
 type Recommendation = {
   id: string;
-  worker: any;
+  candidate: any;
   matchScore: number;
   driver: string;
 };

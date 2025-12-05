@@ -14,17 +14,17 @@ export default function LoginPage() {
       </div>
       
       <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
-        <Link href="/auth/login-worker" className="group">
+        <Link href="/auth/login-candidate" className="group">
           <div className="flex h-full flex-col items-center justify-center space-y-5 rounded-2xl border-2 border-zinc-200 bg-white/50 p-8 text-center transition hover:border-indigo-500 hover:bg-indigo-50/50 dark:border-zinc-800 dark:bg-zinc-950/50 dark:hover:bg-indigo-950/20">
             <div className="rounded-full bg-indigo-100 p-5 dark:bg-indigo-900/30">
               <User className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <h2 className="text-xl font-semibold">Worker Portal</h2>
+            <h2 className="text-xl font-semibold">Candidate Portal</h2>
             <p className="text-sm leading-relaxed text-zinc-500">
-              Login as a worker to find job opportunities and manage your profile
+              Login as a candidate to find job opportunities and manage your profile
             </p>
             <Button className="w-full" variant="outline">
-              Login as Worker
+              Login as Candidate
             </Button>
           </div>
         </Link>
@@ -36,7 +36,7 @@ export default function LoginPage() {
             </div>
             <h2 className="text-xl font-semibold">Company Portal</h2>
             <p className="text-sm leading-relaxed text-zinc-500">
-              Login as a company to post jobs and find skilled workers
+              Login as a company to post jobs and find skilled candidates
             </p>
             <Button className="w-full" variant="outline">
               Login as Company
@@ -48,8 +48,8 @@ export default function LoginPage() {
       <div className="pt-4 text-center text-sm text-zinc-500">
         <p>
           Don't have an account?{" "}
-          <Link href="/auth/register-worker" className="font-medium text-indigo-500 hover:underline">
-            Register as Worker
+          <Link href="/auth/register-candidate" className="font-medium text-indigo-500 hover:underline">
+            Register as Candidate
           </Link>
           {" or "}
           <Link href="/auth/register-sme" className="font-medium text-indigo-500 hover:underline">

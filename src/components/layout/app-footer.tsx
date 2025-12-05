@@ -4,7 +4,7 @@ export function AppFooter() {
   return (
     <footer className="border-t border-white/10 bg-white/60 backdrop-blur dark:bg-black/60">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 text-sm text-zinc-600 dark:text-zinc-400 md:flex-row md:items-center md:justify-between">
-        <p>© {new Date().getFullYear()} GeoMatchX. Matching skilled workers & SMEs.</p>
+        <p>© {new Date().getFullYear()} GeoMatchX. Matching skilled candidates & SMEs.</p>
         <div className="flex flex-wrap gap-4">
           <Link href="/privacy" className="hover:text-indigo-500">
             Privacy

@@ -19,8 +19,8 @@ export function RecommendationList({ recommendations }: RecommendationListProps)
               {rec.matchScore}%
             </span>
           </div>
-          <h4 className="text-xl font-semibold">{rec.worker.name}</h4>
-          <p className="text-sm text-white/80">{rec.worker.headline}</p>
+          <h4 className="text-xl font-semibold">{rec.candidate.name}</h4>
+          <p className="text-sm text-white/80">{rec.candidate.headline}</p>
           <div className="flex items-center gap-2 rounded-2xl bg-white/15 px-3 py-2 text-sm">
             <FlameKindling className="h-4 w-4 text-amber-300" />
             {rec.driver}

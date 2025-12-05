@@ -37,13 +37,13 @@ export async function requireWorker() {
       { status: 401 }
     );
   }
-  if (user.userType !== 'WORKER') {
+  if (user.userType !== 'CANDIDATE') {
     return NextResponse.json(
-      { error: 'This action requires worker account' },
+      { error: 'This action requires candidate account' },
       { status: 403 }
     );
   }
-  return null; // No error, user is worker
+  return null; // No error, user is candidate
 }
 
 export async function getAuthenticatedUser() {

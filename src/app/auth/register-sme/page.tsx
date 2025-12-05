@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
+import { GEO_LOCATIONS } from "@/lib/locations";
 import { toast } from "sonner";
 
 export default function RegisterSmePage() {
@@ -16,10 +17,19 @@ export default function RegisterSmePage() {
     email: "",
     password: "",
     phone: "",
+    country: "India",
+    state: "",
     hqCity: "",
     industriesServed: "",
     deploymentNeeds: "",
   });
+
+  const countries = Array.from(new Set(GEO_LOCATIONS.map((loc) => loc.country)));
+  const states = GEO_LOCATIONS.filter((loc) => loc.country === formData.country).map((loc) => loc.state);
+  const uniqueStates = Array.from(new Set(states));
+  const cities = GEO_LOCATIONS.filter(
+    (loc) => loc.country === formData.country && loc.state === formData.state
+  );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,7 +52,7 @@ export default function RegisterSmePage() {
 
       if (!response.ok) {
         const errorMessage = data?.error || `Registration failed (${response.status})`;
-        console.error("Registration error:", errorMessage);
+        // Let the catch block handle logging and user feedback
         throw new Error(errorMessage);
       }
 
@@ -60,8 +70,15 @@ export default function RegisterSmePage() {
       }, 500);
     } catch (error) {
       console.error("Registration error:", error);
-      toast.error("Registration failed", {
-        description: error instanceof Error ? error.message : "Unknown error occurred. Please check your connection and try again.",
+
+      const message = error instanceof Error ? error.message : "Unknown error occurred. Please check your connection and try again.";
+      const isExistingEmail =
+        typeof message === "string" && message.toLowerCase().includes("user with this email already exists");
+
+      toast.error(isExistingEmail ? "Account already exists" : "Registration failed", {
+        description: isExistingEmail
+          ? "An account with this email already exists. Please log in instead, or use a different email."
+          : message,
       });
     } finally {
       setIsLoading(false);
@@ -135,15 +152,64 @@ export default function RegisterSmePage() {
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            HQ city
-          </label>
-              <Input
+                Country
+              </label>
+              <select
+                required
+                value={formData.country}
+                onChange={(e) =>
+                  setFormData({ ...formData, country: e.target.value, state: "", hqCity: "" })
+                }
+                disabled={isLoading}
+                className="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+              >
+                <option value="">Select country</option>
+                {countries.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                State
+              </label>
+              <select
+                required
+                value={formData.state}
+                onChange={(e) =>
+                  setFormData({ ...formData, state: e.target.value, hqCity: "" })
+                }
+                disabled={isLoading || !formData.country}
+                className="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+              >
+                <option value="">Select state</option>
+                {uniqueStates.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                HQ city
+              </label>
+              <select
                 required
                 value={formData.hqCity}
                 onChange={(e) => setFormData({ ...formData, hqCity: e.target.value })}
-                disabled={isLoading}
-                className="h-11"
-              />
+                disabled={isLoading || !formData.state}
+                className="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+              >
+                <option value="">Select HQ city</option>
+                {cities.map((loc) => (
+                  <option key={loc.id} value={loc.city}>
+                    {loc.city}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">

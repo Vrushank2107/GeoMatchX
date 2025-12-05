@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "GeoMatchX",
-  description: "Discover and manage skilled worker networks across emerging markets.",
+  description: "Discover and manage skilled candidate networks across emerging markets.",
   metadataBase: new URL("https://geomatchx.local"),
   openGraph: {
     title: "GeoMatchX",

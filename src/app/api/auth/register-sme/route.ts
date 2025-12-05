@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { database } from '@/lib/db';
 import { hashPassword, createSession } from '@/lib/auth';
+import { findGeoLocationByCity } from '@/lib/locations';
 
 export async function POST(request: Request) {
   try {
@@ -67,10 +68,16 @@ export async function POST(request: Request) {
 
     // Add location if provided
     if (hqCity) {
+      const geo = findGeoLocationByCity(hqCity);
       database.prepare(`
         INSERT INTO user_locations (user_id, address, latitude, longitude)
         VALUES (?, ?, ?, ?)
-      `).run(userId, hqCity, null, null);
+      `).run(
+        userId,
+        hqCity,
+        geo?.latitude ?? null,
+        geo?.longitude ?? null,
+      );
     }
 
     // Create session
@@ -88,7 +95,7 @@ export async function POST(request: Request) {
       user_id: number;
       name: string;
       email: string;
-      user_type: 'SME' | 'WORKER';
+      user_type: 'SME' | 'CANDIDATE';
     };
 
     const response = NextResponse.json({

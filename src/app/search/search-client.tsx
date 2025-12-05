@@ -7,7 +7,7 @@ import Link from "next/link";
 import type { SearchFilters } from "@/components/search-bar";
 import { SearchBar } from "@/components/search-bar";
 import { LoadingState } from "@/components/loading-state";
-import { WorkerCard } from "@/components/worker-card";
+import { WorkerCard } from "@/components/candidate-card";
 import { JobCard } from "@/components/job-card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-client";
@@ -63,7 +63,7 @@ export default function SearchClient() {
   const pageSize = 12;
   const [lastFilters, setLastFilters] = useState<SearchFilters | null>(null);
 
-  // When auth state changes, update toggle to default to jobs view for workers
+  // When auth state changes, update toggle to default to jobs view for candidates
   useEffect(() => {
     if (isWorker) {
       setShowJobs(true);
@@ -74,7 +74,7 @@ export default function SearchClient() {
 
   useEffect(() => {
     if (isWorker && showJobs) {
-      // Fetch jobs for workers when Jobs view is selected
+      // Fetch jobs for candidates when Jobs view is selected
       fetch("/api/jobs")
         .then((res) => res.json())
         .then((data) => setJobs(data.jobs || []))
@@ -144,7 +144,7 @@ export default function SearchClient() {
             variant={!showJobs ? "default" : "outline"}
             onClick={() => setShowJobs(false)}
           >
-            Workers
+            Candidates
           </Button>
         </div>
       )}
@@ -193,11 +193,11 @@ export default function SearchClient() {
             Showing <span className="font-semibold text-zinc-900 dark:text-zinc-100">{total}</span> matching operators
           </p>
           <div className="grid gap-6 md:grid-cols-2">
-            {results.map((worker) => (
+            {results.map((candidate) => (
               <WorkerCard 
-                key={worker.id} 
-                worker={worker} 
-                actionHref={`/workers/${worker.id}`}
+                key={candidate.id} 
+                candidate={candidate} 
+                actionHref={`/candidates/${candidate.id}`}
                 showRecruitButton={isSME}
               />
             ))}

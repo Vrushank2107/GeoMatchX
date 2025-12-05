@@ -11,7 +11,7 @@ export async function GET(
     
     if (!resolvedParams?.id) {
       return NextResponse.json(
-        { error: "Worker ID is required" },
+        { error: "Candidate ID is required" },
         { status: 400 }
       );
     }
@@ -23,7 +23,7 @@ export async function GET(
 
     if (isNaN(userId) || userId <= 0) {
       return NextResponse.json(
-        { error: "Invalid worker ID" },
+        { error: "Invalid candidate ID" },
         { status: 400 }
       );
     }
@@ -37,9 +37,9 @@ export async function GET(
       );
     }
 
-    const worker = database.prepare(`
+    const candidate = database.prepare(`
       SELECT * FROM users 
-      WHERE user_id = ? AND user_type = 'WORKER'
+      WHERE user_id = ? AND user_type = 'CANDIDATE'
     `).get(userId) as {
       user_id: number;
       name: string;
@@ -49,9 +49,9 @@ export async function GET(
       created_at: string;
     } | undefined;
 
-    if (!worker) {
+    if (!candidate) {
       return NextResponse.json(
-        { error: "Worker not found" },
+        { error: "Candidate not found" },
         { status: 404 }
       );
     }
@@ -107,11 +107,11 @@ export async function GET(
       : 0;
 
     const formattedWorker = {
-      id: `wkr-${worker.user_id}`,
-      name: worker.name,
+      id: `wkr-${candidate.user_id}`,
+      name: candidate.name,
       headline: userSkills.length > 0 
         ? `${userSkills[0].skill_name} specialist`
-        : "Available worker",
+        : "Available candidate",
       experience: avgExperience,
       availability: "Immediate" as const,
       hourlyRate: 30 + Math.floor(Math.random() * 30),
@@ -124,17 +124,17 @@ export async function GET(
       rating: 4.5 + Math.random() * 0.5,
       skills: userSkills.map(us => us.skill_name) as any[],
       bio: `Experienced ${userSkills.map(us => us.skill_name).join(", ")} professional.`,
-      email: worker.email,
-      phone: worker.phone
+      email: candidate.email,
+      phone: candidate.phone
     };
 
     return NextResponse.json(formattedWorker);
   } catch (error) {
-    console.error("Error fetching worker profile:", error);
+    console.error("Error fetching candidate profile:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       { 
-        error: "Failed to fetch worker profile",
+        error: "Failed to fetch candidate profile",
         details: errorMessage 
       },
       { status: 500 }

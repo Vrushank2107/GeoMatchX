@@ -41,18 +41,25 @@ export default function MyCompanyProfilePage() {
   return (
     <AuthGuard requireAuth requireSME>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Company Profile</p>
-            <h1 className="text-3xl font-semibold">How Workers See Your Company</h1>
-            <p className="text-sm text-zinc-500">This is how your company profile appears to workers.</p>
+            <h1 className="text-3xl font-semibold">How Candidates See Your Company</h1>
+            <p className="text-sm text-zinc-500">This is how your company profile appears to candidates.</p>
           </div>
-          <Button asChild>
-            <Link href="/sme/profile/edit">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Link>
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button asChild>
+              <Link href="/sme/profile/edit">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Profile
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/sme/profile/change-password">
+                Change Password
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -112,7 +119,7 @@ export default function MyCompanyProfilePage() {
                     <span className="font-medium">Company Account</span>
                   </div>
                   <p className="text-sm text-zinc-500">
-                    As a company, you can post jobs, search for workers, and manage your workforce.
+                    As a company, you can post jobs, search for candidates, and manage your workforce.
                   </p>
                 </div>
               </CardContent>

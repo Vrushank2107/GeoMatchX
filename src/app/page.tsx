@@ -39,14 +39,14 @@ export type HomeJob = {
 
 export type HomeRecommendation = {
   id: string;
-  worker: HomeWorker;
+  candidate: HomeWorker;
   matchScore: number;
   driver: string;
 };
 
 export default function Home() {
   const { user, isAuthenticated, isLoading: authLoading, isWorker, isSME } = useAuth();
-  const [workers, setWorkers] = useState<HomeWorker[]>([]);
+  const [candidates, setWorkers] = useState<HomeWorker[]>([]);
   const [jobs, setJobs] = useState<HomeJob[]>([]);
   const [recommendations, setRecommendations] = useState<HomeRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,11 +55,11 @@ export default function Home() {
     async function fetchData() {
       setIsLoading(true);
       try {
-        // Fetch workers (public API)
-        const workersResponse = await fetch("/api/workers");
+        // Fetch candidates (public API)
+        const workersResponse = await fetch("/api/candidates");
         if (workersResponse.ok) {
           const workersData = await workersResponse.json();
-          setWorkers(workersData.results?.slice(0, 6) || []); // Show first 6 workers
+          setWorkers(workersData.results?.slice(0, 6) || []); // Show first 6 candidates
         }
       } catch (error) {
         console.error("Error fetching home data:", error);
@@ -75,7 +75,7 @@ export default function Home() {
 
   return (
     <HomeClient 
-      workers={workers} 
+      candidates={candidates} 
       jobs={jobs} 
       recommendations={recommendations}
       isLoading={isLoading || authLoading}

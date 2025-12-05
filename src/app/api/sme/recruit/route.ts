@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     if (!worker_id) {
       return NextResponse.json(
-        { error: "Worker ID is required" },
+        { error: "Candidate ID is required" },
         { status: 400 }
       );
     }
@@ -31,22 +31,22 @@ export async function POST(request: Request) {
 
     if (isNaN(userId)) {
       return NextResponse.json(
-        { error: "Invalid worker ID" },
+        { error: "Invalid candidate ID" },
         { status: 400 }
       );
     }
 
-    // Verify worker exists
-    const worker = database.prepare(`
-      SELECT * FROM users WHERE user_id = ? AND user_type = 'WORKER'
+    // Verify candidate exists
+    const candidate = database.prepare(`
+      SELECT * FROM users WHERE user_id = ? AND user_type = 'CANDIDATE'
     `).get(userId) as {
       user_id: number;
       name: string;
     } | undefined;
 
-    if (!worker) {
+    if (!candidate) {
       return NextResponse.json(
-        { error: "Worker not found" },
+        { error: "Candidate not found" },
         { status: 404 }
       );
     }
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Prevent recruitment if worker already has an active application with this company
+    // Prevent recruitment if candidate already has an active application with this company
     const activeApplication = database.prepare(`
       SELECT ja.application_id, ja.status
       FROM job_applications ja
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
     if (activeApplication) {
       return NextResponse.json(
-        { error: "This worker already has an active job application with your company. Please manage it from your Applications page instead of sending a recruitment request." },
+        { error: "This candidate already has an active job application with your company. Please manage it from your Applications page instead of sending a recruitment request." },
         { status: 400 }
       );
     }
@@ -98,14 +98,14 @@ export async function POST(request: Request) {
       VALUES (?, ?, 'PENDING')
     `).run(currentUser.userId, userId);
 
-    // Create notification for the worker
+    // Create notification for the candidate
     database.prepare(`
       INSERT INTO notifications (user_id, type, title, message, link)
       VALUES (?, 'RECRUITMENT_REQUEST', 'Recruitment Request', ?, ?)
     `).run(
       userId,
       `${company?.name || 'A company'} has sent you a recruitment request`,
-      `/worker/recruitments`
+      `/candidate/recruitments`
     );
 
     return NextResponse.json({

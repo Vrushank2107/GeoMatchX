@@ -56,9 +56,9 @@ export function AuthGuard({
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-3">
               <Button asChild>
-                <Link href="/auth/register-worker">
+                <Link href="/auth/register-candidate">
                   <User className="mr-2 h-4 w-4" />
-                  Register as Worker
+                  Register as Candidate
                 </Link>
               </Button>
               <Button asChild variant="outline">
@@ -77,7 +77,7 @@ export function AuthGuard({
     );
   }
 
-  // Require SME but user is Worker
+  // Require SME but user is Candidate
   if (requireSME && isWorker) {
     return (
       <div className="space-y-6">
@@ -100,7 +100,7 @@ export function AuthGuard({
                 </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/workers">View Worker Dashboard</Link>
+                <Link href="/candidates">View Candidate Dashboard</Link>
               </Button>
             </div>
           </CardContent>
@@ -109,7 +109,7 @@ export function AuthGuard({
     );
   }
 
-  // Require Worker but user is SME
+  // Require Candidate but user is SME
   if (requireWorker && isSME) {
     return (
       <div className="space-y-6">
@@ -117,18 +117,18 @@ export function AuthGuard({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
               <User className="h-5 w-5" />
-              Worker account required
+              Candidate account required
             </CardTitle>
             <CardDescription className="text-amber-700 dark:text-amber-300">
-              This page is only available for worker accounts. Please register as a worker to access this feature.
+              This page is only available for candidate accounts. Please register as a candidate to access this feature.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-3">
               <Button asChild>
-                <Link href="/auth/register-worker">
+                <Link href="/auth/register-candidate">
                   <User className="mr-2 h-4 w-4" />
-                  Register as Worker
+                  Register as Candidate
                 </Link>
               </Button>
               <Button asChild variant="outline">

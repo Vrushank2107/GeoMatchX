@@ -25,8 +25,8 @@ export default function DashboardPage() {
     async function fetchData() {
       try {
         const [statsRes, profileRes] = await Promise.all([
-          fetch("/api/worker/stats"),
-          fetch("/api/worker/profile"),
+          fetch("/api/candidate/stats"),
+          fetch("/api/candidate/profile"),
         ]);
 
         if (statsRes.ok) {
@@ -62,11 +62,11 @@ export default function DashboardPage() {
     <AuthGuard requireAuth requireWorker>
       <div className="space-y-6">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Worker Dashboard</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Candidate Dashboard</p>
           <h1 className="text-3xl font-semibold">
             Welcome back,{" "}
             <Link href="/profile/edit" className="text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">
-              {user?.name || "Worker"}
+              {user?.name || "Candidate"}
             </Link>
             !
           </h1>

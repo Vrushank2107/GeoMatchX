@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { database } from "@/lib/db";
 import { requireSME, getAuthenticatedUser } from "@/lib/api-auth";
+import { findGeoLocationByCity } from "@/lib/locations";
 
 export async function GET() {
   try {
@@ -65,22 +66,23 @@ export async function PUT(request: Request) {
       .prepare(`UPDATE users SET name = ?, phone = ? WHERE user_id = ?`)
       .run(name, phone || null, currentUser.userId);
 
-    // Update location
+    // Update location with coordinates
     if (city) {
+      const geo = findGeoLocationByCity(city);
       const existingLocation = database
         .prepare(`SELECT location_id FROM user_locations WHERE user_id = ? LIMIT 1`)
         .get(currentUser.userId) as { location_id: number } | undefined;
 
       if (existingLocation) {
         database
-          .prepare(`UPDATE user_locations SET address = ? WHERE location_id = ?`)
-          .run(city, existingLocation.location_id);
+          .prepare(`UPDATE user_locations SET address = ?, latitude = ?, longitude = ? WHERE location_id = ?`)
+          .run(city, geo?.latitude ?? null, geo?.longitude ?? null, existingLocation.location_id);
       } else {
         database
           .prepare(
             `INSERT INTO user_locations (user_id, address, latitude, longitude) VALUES (?, ?, ?, ?)`
           )
-          .run(currentUser.userId, city, null, null);
+          .run(currentUser.userId, city, geo?.latitude ?? null, geo?.longitude ?? null);
       }
     }
 

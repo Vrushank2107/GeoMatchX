@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingState } from "@/components/loading-state";
+import { GEO_LOCATIONS } from "@/lib/locations";
 import { toast } from "sonner";
 import { Key, LogOut, Shield, User } from "lucide-react";
 
@@ -17,29 +18,33 @@ export default function EditProfilePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
+    country: "India",
+    state: "",
     city: "",
     skills: "",
     experience: "",
     bio: "",
   });
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+
+  const countries = Array.from(new Set(GEO_LOCATIONS.map((loc) => loc.country)));
+  const states = GEO_LOCATIONS.filter((loc) => loc.country === formData.country).map((loc) => loc.state);
+  const uniqueStates = Array.from(new Set(states));
+  const cities = GEO_LOCATIONS.filter(
+    (loc) => loc.country === formData.country && loc.state === formData.state
+  );
 
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const response = await fetch("/api/worker/profile");
+        const response = await fetch("/api/candidate/profile");
         if (response.ok) {
           const data = await response.json();
-          setFormData({
+          setFormData((prev) => ({
+            ...prev,
             name: data.name || "",
             email: data.email || "",
             phone: data.phone || "",
@@ -47,7 +52,7 @@ export default function EditProfilePage() {
             skills: data.skills?.join(", ") || "",
             experience: data.experience?.toString() || "",
             bio: data.bio || "",
-          });
+          }));
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -63,7 +68,7 @@ export default function EditProfilePage() {
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/worker/profile", {
+      const response = await fetch("/api/candidate/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -83,48 +88,6 @@ export default function EditProfilePage() {
     }
   }
 
-  async function handlePasswordChange(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
-
-    if (passwordData.newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
-
-    setIsChangingPassword(true);
-
-    try {
-      const response = await fetch("/api/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success("Password changed successfully!");
-        setPasswordData({
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        });
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to change password");
-      }
-    } catch (error) {
-      toast.error("Failed to change password");
-    } finally {
-      setIsChangingPassword(false);
-    }
-  }
 
   async function handleLogout() {
     await logout();
@@ -186,13 +149,59 @@ export default function EditProfilePage() {
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       />
                     </div>
-                    <div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Country</label>
+                      <select
+                        value={formData.country}
+                        onChange={(e) =>
+                          setFormData({ ...formData, country: e.target.value, state: "", city: "" })
+                        }
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                      >
+                        <option value="">Select country</option>
+                        {countries.map((country) => (
+                          <option key={country} value={country}>
+                            {country}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 mt-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">State</label>
+                      <select
+                        value={formData.state}
+                        onChange={(e) =>
+                          setFormData({ ...formData, state: e.target.value, city: "" })
+                        }
+                        disabled={!formData.country}
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                      >
+                        <option value="">Select state</option>
+                        {uniqueStates.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
                       <label className="text-sm font-medium">City</label>
-                      <Input
+                      <select
                         value={formData.city}
                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        placeholder="e.g., Mumbai, Delhi"
-                      />
+                        disabled={!formData.state}
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                      >
+                        <option value="">Select city</option>
+                        {cities.map((loc) => (
+                          <option key={loc.id} value={loc.city}>
+                            {loc.city}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -268,58 +277,7 @@ export default function EditProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Change Password */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-5 w-5" />
-                  Change Password
-                </CardTitle>
-                <CardDescription>Update your password to keep your account secure</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Current Password</label>
-                    <Input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) =>
-                        setPasswordData({ ...passwordData, currentPassword: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">New Password</label>
-                    <Input
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={(e) =>
-                        setPasswordData({ ...passwordData, newPassword: e.target.value })
-                      }
-                      required
-                      minLength={8}
-                    />
-                    <p className="text-xs text-zinc-500 mt-1">Must be at least 8 characters</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Confirm New Password</label>
-                    <Input
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={(e) =>
-                        setPasswordData({ ...passwordData, confirmPassword: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={isChangingPassword}>
-                    {isChangingPassword ? "Changing..." : "Change Password"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            
 
             {/* Security */}
             <Card>

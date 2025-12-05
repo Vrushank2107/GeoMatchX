@@ -39,7 +39,7 @@ export function JobCard({ job, showApplyButton = false, onApplySuccess }: JobCar
     
     setIsApplying(true);
     try {
-      const response = await fetch("/api/worker/apply", {
+      const response = await fetch("/api/candidate/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -9,7 +9,7 @@ import type { User } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RecommendationList } from "@/components/recommendation-list";
-import { WorkerCard } from "@/components/worker-card";
+import { WorkerCard } from "@/components/candidate-card";
 import { MotionSection } from "@/components/motion-section";
 import { JobCard } from "@/components/job-card";
 import { LoadingState } from "@/components/loading-state";
@@ -19,7 +19,7 @@ const SearchBar = dynamic(() => import("@/components/search-bar").then((mod) => 
 const MapView = dynamic(() => import("@/components/map-view").then((mod) => mod.MapView), { ssr: false });
 
 type HomeClientProps = {
-  workers: HomeWorker[];
+  candidates: HomeWorker[];
   jobs: HomeJob[];
   recommendations: HomeRecommendation[];
   isLoading?: boolean;
@@ -30,7 +30,7 @@ type HomeClientProps = {
 };
 
 export default function HomeClient({ 
-  workers, 
+  candidates, 
   jobs, 
   recommendations, 
   isLoading = false, 
@@ -72,7 +72,7 @@ export default function HomeClient({
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
-                      Welcome back, {user?.name || 'Worker'}!
+                      Welcome back, {user?.name || 'Candidate'}!
                     </h2>
                     <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
                       Discover opportunities and grow your career
@@ -112,7 +112,7 @@ export default function HomeClient({
                       <Button size="lg" variant="outline" className="min-w-[180px] h-12 text-base" asChild>
                         <Link href="/search">
                           <Search className="mr-2 h-5 w-5" />
-                          Find Workers
+                          Find Candidates
                         </Link>
                       </Button>
                     </>
@@ -128,7 +128,7 @@ export default function HomeClient({
                 </>
               ) : (
                 <Button size="lg" className="min-w-[200px] h-12 text-base" asChild>
-                  <Link href="/auth/register-sme">
+                  <Link href="/auth/login">
                     Get Started
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
@@ -205,32 +205,32 @@ export default function HomeClient({
           </div>
           {isAuthenticated ? (
             <Button variant="outline" asChild>
-              <Link href="/workers">
+              <Link href="/candidates">
                 Browse directory
                 <Users2 className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           ) : (
             <Button variant="outline" asChild>
-              <Link href="/auth/register-worker">
-                Join as Worker
+              <Link href="/auth/register-candidate">
+                Join as Candidate
                 <Users2 className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           )}
         </div>
-        {workers.length > 0 ? (
+        {candidates.length > 0 ? (
           <div className="grid gap-6 lg:grid-cols-3">
-            {workers.slice(0, 3).map((worker) => (
-              <WorkerCard key={worker.id} worker={worker} />
+            {candidates.slice(0, 3).map((candidate) => (
+              <WorkerCard key={candidate.id} candidate={candidate} />
             ))}
           </div>
         ) : (
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-zinc-500">
               {isAuthenticated 
-                ? "No workers available at the moment." 
-                : "Sign in to view available workers."}
+                ? "No candidates available at the moment." 
+                : "Sign in to view available candidates."}
             </p>
           </div>
         )}
@@ -241,7 +241,7 @@ export default function HomeClient({
         <div id="map" className="space-y-4">
           <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Coverage map</p>
           <h2 className="text-2xl font-semibold">Trusted crews across high-growth corridors</h2>
-          <MapView workers={workers} />
+          <MapView candidates={candidates} />
         </div>
       </MotionSection>
     </div>

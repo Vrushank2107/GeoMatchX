@@ -35,7 +35,7 @@ export default function LoginSmePage() {
 
       // Verify user is an SME
       if (data.user.userType !== "SME") {
-        throw new Error("This login is for companies only. Please use the worker login.");
+        throw new Error("This login is for companies only. Please use the candidate login.");
       }
 
       toast.success("Login successful", {
@@ -59,7 +59,7 @@ export default function LoginSmePage() {
       <div className="space-y-3 text-center">
         <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Company Portal</p>
         <h1 className="text-2xl font-semibold sm:text-3xl">Access your workspace</h1>
-        <p className="text-sm text-zinc-500 sm:text-base">Login as a company to post jobs and find workers</p>
+        <p className="text-sm text-zinc-500 sm:text-base">Login as a company to post jobs and find candidates</p>
       </div>
       
       <div className="rounded-2xl border border-zinc-200 bg-white/50 p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-950/50 sm:p-8">
@@ -104,9 +104,9 @@ export default function LoginSmePage() {
           </Link>
         </p>
         <p className="text-zinc-500">
-          Are you a worker?{" "}
-          <Link href="/auth/login-worker" className="font-medium text-indigo-500 hover:underline">
-            Worker Login
+          Are you a candidate?{" "}
+          <Link href="/auth/login-candidate" className="font-medium text-indigo-500 hover:underline">
+            Candidate Login
           </Link>
         </p>
       </div>

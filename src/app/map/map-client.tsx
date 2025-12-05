@@ -8,13 +8,13 @@ import { Card, CardContent } from "@/components/ui/card";
 const MapView = dynamic(() => import("@/components/map-view").then((mod) => mod.MapView), { ssr: false });
 
 type MapClientProps = {
-  workers: MapWorker[];
+  candidates: MapWorker[];
 };
 
-export default function MapClient({ workers }: MapClientProps) {
+export default function MapClient({ candidates }: MapClientProps) {
   return (
     <div className="space-y-6">
-      <MapView workers={workers} />
+      <MapView candidates={candidates} />
     </div>
   );
 }

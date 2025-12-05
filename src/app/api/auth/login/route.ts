@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       email: string;
       password: string | null;
       phone: string | null;
-      user_type: 'SME' | 'WORKER';
+      user_type: 'SME' | 'CANDIDATE';
       created_at: string;
     } | undefined;
 

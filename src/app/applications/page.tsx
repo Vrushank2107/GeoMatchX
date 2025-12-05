@@ -40,8 +40,8 @@ export default function ApplicationsPage() {
         setIsLoading(true);
         // Fetch both applications and recruitments
         const [appsResponse, recResponse] = await Promise.all([
-          fetch("/api/worker/applications"),
-          fetch("/api/worker/recruitments"),
+          fetch("/api/candidate/applications"),
+          fetch("/api/candidate/recruitments"),
         ]);
         
         if (appsResponse.ok) {
@@ -69,7 +69,7 @@ export default function ApplicationsPage() {
   async function handleRecruitmentResponse(requestId: number, status: "ACCEPTED" | "REJECTED") {
     setUpdatingRecruitment(requestId);
     try {
-      const response = await fetch(`/api/worker/recruitments/${requestId}`, {
+      const response = await fetch(`/api/candidate/recruitments/${requestId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -82,8 +82,8 @@ export default function ApplicationsPage() {
 
       // Refresh both recruitments and applications to update the UI
       const [recResponse, appsResponse] = await Promise.all([
-        fetch("/api/worker/recruitments"),
-        fetch("/api/worker/applications"),
+        fetch("/api/candidate/recruitments"),
+        fetch("/api/candidate/applications"),
       ]);
       
       if (recResponse.ok) {

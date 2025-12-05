@@ -6,7 +6,7 @@ export type User = {
   id: number;
   name: string;
   email: string;
-  userType: "WORKER" | "SME";
+  userType: "CANDIDATE" | "SME";
   phone?: string | null;
 };
 
@@ -62,7 +62,7 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isWorker: user?.userType === "WORKER",
+    isWorker: user?.userType === "CANDIDATE",
     isSME: user?.userType === "SME",
     logout,
     refresh: checkAuth,

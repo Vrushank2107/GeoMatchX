@@ -79,17 +79,17 @@ function seed() {
   ensureLocation(smeOrigin, "Cape Town");
 
   // Workers
-  const workerAmina = ensureUser("amina@workers.example", "Amina Yusuf", "WORKER");
+  const workerAmina = ensureUser("amina@workers.example", "Amina Yusuf", "CANDIDATE");
   ensureLocation(workerAmina, "Nairobi");
   linkUserSkill(workerAmina, "Electrical", 6);
   linkUserSkill(workerAmina, "Construction", 6);
 
-  const workerKwame = ensureUser("kwame@workers.example", "Kwame Boateng", "WORKER");
+  const workerKwame = ensureUser("kwame@workers.example", "Kwame Boateng", "CANDIDATE");
   ensureLocation(workerKwame, "Accra");
   linkUserSkill(workerKwame, "Construction", 9);
   linkUserSkill(workerKwame, "Logistics", 9);
 
-  const workerLindiwe = ensureUser("lindiwe@workers.example", "Lindiwe Ndlovu", "WORKER");
+  const workerLindiwe = ensureUser("lindiwe@workers.example", "Lindiwe Ndlovu", "CANDIDATE");
   ensureLocation(workerLindiwe, "Johannesburg");
   linkUserSkill(workerLindiwe, "Hospitality", 8);
   linkUserSkill(workerLindiwe, "Catering", 8);

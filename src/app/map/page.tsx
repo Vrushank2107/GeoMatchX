@@ -24,7 +24,7 @@ export type MapWorker = {
 };
 
 export default function MapPage() {
-  const [workers, setWorkers] = useState<MapWorker[]>([]);
+  const [candidates, setWorkers] = useState<MapWorker[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,9 +32,9 @@ export default function MapPage() {
     async function fetchWorkers() {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/workers");
+        const response = await fetch("/api/candidates");
         if (!response.ok) {
-          throw new Error("Failed to fetch workers");
+          throw new Error("Failed to fetch candidates");
         }
         const data = await response.json();
         setWorkers(data.results || []);
@@ -52,9 +52,9 @@ export default function MapPage() {
       <div className="space-y-6">
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.4em] text-indigo-500">Coverage intelligence</p>
-          <h1 className="text-3xl font-semibold">Live worker density and proximity</h1>
+          <h1 className="text-3xl font-semibold">Live candidate density and proximity</h1>
           <p className="text-sm text-zinc-500">
-            Visualize worker locations and coverage across different regions.
+            Visualize candidate locations and coverage across different regions.
           </p>
         </div>
         {isLoading ? (
@@ -64,7 +64,7 @@ export default function MapPage() {
           {error}
         </div>
         ) : (
-          <MapClient workers={workers} />
+          <MapClient candidates={candidates} />
         )}
       </div>
     </AuthGuard>
